@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Bioreactor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root {
+  --bg: #f4f6f5; --panel: #ffffff; --ink: #18211e; --muted: #5d6b66; --line: #d9e0dd; --grid: #e9eeec;
+  --none: #8a948f; --apc: #c7782a; --ppo: #127a6b; --warn: #b3261e; --accent: #127a6b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101513; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
+    --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --warn: #ef6b62; --accent: #3fbfa8;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101513; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
+  --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --warn: #ef6b62; --accent: #3fbfa8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 'IBM Plex Sans', system-ui, sans-serif; }
+header { padding: 18px 24px 10px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+h1 { font-size: 20px; margin: 0; font-weight: 600; }
+.sub { color: var(--muted); font-size: 13px; margin-top: 2px; max-width: 70ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+select, input, button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+input[type=number] { width: 7em; font-family: 'IBM Plex Mono', monospace; }
+button { cursor: pointer; font-weight: 500; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+main { padding: 0 24px 32px; display: grid; gap: 14px; }
+.status { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; color: var(--muted); font-size: 13px; }
+.bar { flex: 1 1 240px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 160px; }
+.bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; border-top: 3px solid var(--c); }
+.tile .name { font-size: 12px; color: var(--muted); }
+.tile .val { font: 500 24px 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.tile .note { font-size: 12px; color: var(--muted); min-height: 1.2em; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+section h2 { font-size: 14px; margin: 0 0 2px; font-weight: 600; }
+section p.cap { margin: 0 0 6px; color: var(--muted); font-size: 12.5px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 10px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 4px 10px; }
+.grid4 > *, .grid2 > *, .two > * { min-width: 0; }
+.plot { height: 190px; width: 100%; overflow: hidden; }
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 6px; }
+.two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; }
+@media (max-width: 820px) { .two { grid-template-columns: 1fr; } header, main { padding-left: 16px; padding-right: 16px; } }
+.log { max-height: 330px; overflow: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.up { color: var(--ppo); } .down { color: var(--apc); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Virtual Bioreactor · 100,000 L penicillin fed-batch</h1>
+    <div class="sub">The same IndPenSim batch runs live under three controllers. The PPO policy reads only the sixteen on-line channels and sets ten operating variables every 6 h from 12 h. APC holds the true PAA at 1,200 mg/L.</div>
+  </div>
+  <div class="controls">
+    <label>Batch seed <input id="seed" type="number" value="847" min="0" list="seedlist"></label>
+    <datalist id="seedlist"></datalist>
+    <label>Speed
+      <select id="speed">
+        <option value="2">2 h / s</option><option value="5">5 h / s</option>
+        <option value="10" selected>10 h / s</option><option value="0">As fast as possible</option>
+      </select>
+    </label>
+    <button class="primary" id="start">Start batch</button>
+    <button id="pause" disabled>Pause</button>
+    <button id="stop" disabled>Stop</button>
+    <button id="theme" title="Switch light and dark">◐</button>
+  </div>
+</header>
+<main>
+  <div class="status">
+    <span id="state">Choose a seed and start a batch.</span>
+    <span class="mono" id="clock">0.0 h</span>
+    <div class="bar"><div id="prog"></div></div>
+    <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span></span>
+  </div>
+  <div class="tiles">
+    <div class="tile" style="--c:var(--none)"><div class="name">Net yield · no intervention</div><div class="val" id="y-none">–</div><div class="note" id="n-none"></div></div>
+    <div class="tile" style="--c:var(--apc)"><div class="name">Net yield · APC</div><div class="val" id="y-apc">–</div><div class="note" id="n-apc"></div></div>
+    <div class="tile" style="--c:var(--ppo)"><div class="name">Net yield · PPO</div><div class="val" id="y-ppo">–</div><div class="note" id="n-ppo"></div></div>
+    <div class="tile" style="--c:var(--accent)"><div class="name">PPO − APC</div><div class="val" id="y-diff">–</div><div class="note">kg of penicillin, same batch</div></div>
+  </div>
+  <section>
+    <h2>What the PPO policy sees</h2>
+    <p class="cap">On-line channels recorded by the plant. The policy also reads the vessel weight and volume, off-gas O₂, the current feeds and the batch time.</p>
+    <div class="grid4" id="g-online"></div>
+  </section>
+  <div class="two">
+    <section>
+      <h2>What the controllers set</h2>
+      <p class="cap">Sugar and PAA feeds actually applied. APC changes only the PAA feed. PPO also adjusts eight other variables, which stay within a few percent of the recipe.</p>
+      <div class="grid2" id="g-act"></div>
+    </section>
+    <section>
+      <h2>PPO decisions</h2>
+      <p class="cap">Multipliers on the recipe, every 6 h.</p>
+      <div class="log"><table><thead><tr><th>Time (h)</th><th>Fs ×</th><th>Fpaa ×</th><th>pH sp</th><th>T sp (K)</th></tr></thead><tbody id="dec"></tbody></table></div>
+    </section>
+  </div>
+  <section>
+    <h2>Inside the broth</h2>
+    <p class="cap">Not measured on-line, and not available to the PPO policy. Shown here to compare the controllers. The dotted line on PAA marks the toxic threshold of 2,400 mg/L.</p>
+    <div class="grid4" id="g-hidden"></div>
+  </section>
+</main>
+<script>
+const C = ['none', 'apc', 'ppo'];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const PANELS = {
+  'g-online': [['DO2', 'Dissolved O₂ (mg/L)'], ['pH', 'pH'], ['T', 'Temperature (K)'], ['CO2', 'Off-gas CO₂ (%)'],
+               ['OUR', 'OUR'], ['CER', 'CER'], ['Fb', 'Base flow Fb (L/h)'], ['Fc', 'Coolant flow Fc (L/h)']],
+  'g-act': [['Fs', 'Sugar feed Fs (L/h)'], ['Fpaa', 'PAA feed Fpaa (L/h)']],
+  'g-hidden': [['PAA', 'PAA (mg/L)'], ['S', 'Sugar S (g/L)'], ['X', 'Biomass (g/L)'], ['yield', 'Net penicillin yield (kg)']],
+};
+const plots = [];
+let HOURS = 320, SEEDS = {};
+function layout(title, key) {
+  const shapes = key === 'PAA' ? [{type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 2400, y1: 2400, line: {color: css('--warn'), dash: 'dot', width: 1}}] : [];
+  return {
+    title: {text: title, font: {size: 12, color: css('--ink')}, x: 0.02, y: 0.96},
+    margin: {l: 52, r: 8, t: 26, b: 28}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {family: 'IBM Plex Sans, sans-serif', size: 10.5, color: css('--muted')},
+    xaxis: {title: {text: 'h', standoff: 2}, gridcolor: css('--grid'), zeroline: false, range: [0, HOURS]},
+    yaxis: {gridcolor: css('--grid'), zeroline: false}, showlegend: false, shapes, autosize: true,
+  };
+}
+function build() {
+  plots.length = 0;
+  for (const [gid, items] of Object.entries(PANELS)) {
+    const g = document.getElementById(gid); g.innerHTML = '';
+    for (const [key, title] of items) {
+      const div = document.createElement('div'); div.className = 'plot'; g.appendChild(div);
+      const traces = C.map(c => ({x: [], y: [], mode: 'lines', line: {color: css('--' + c), width: c === 'ppo' ? 2 : 1.4}, name: c, hovertemplate: '%{x:.1f} h · %{y:.4g}<extra>' + c + '</extra>'}));
+      Plotly.newPlot(div, traces, layout(title, key), {displayModeBar: false, responsive: true});
+      plots.push({div, key});
+      new ResizeObserver(() => Plotly.Plots.resize(div)).observe(div);
+    }
+  }
+}
+build();
+
+let es = null, buf = {none: [], apc: [], ppo: []}, last = {}, N = 1, paused = false;
+const fmt = v => v == null || isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US');
+function draw() {
+  for (const p of plots) {
+    const xs = [], ys = [], idx = [];
+    C.forEach((c, i) => { if (buf[c].length) { xs.push(buf[c].map(s => s.t)); ys.push(buf[c].map(s => s[p.key])); idx.push(i); } });
+    if (idx.length) Plotly.extendTraces(p.div, {x: xs, y: ys}, idx);
+  }
+  for (const c of C) buf[c] = [];
+  for (const c of C) if (last[c]) document.getElementById('y-' + c).textContent = fmt(last[c].yield);
+  if (last.apc && last.ppo) {
+    const d = last.ppo.yield - last.apc.yield;
+    const el = document.getElementById('y-diff'); el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)); el.className = 'val ' + (d >= 0 ? 'up' : 'down');
+  }
+  const t = Math.min(...C.map(c => last[c] ? last[c].t : 0));
+  document.getElementById('clock').textContent = t.toFixed(1) + ' h';
+  document.getElementById('prog').style.width = Math.min(100, 100 * t / (N * 0.2)) + '%';
+}
+function flush() { draw(); requestAnimationFrame(flush); }
+requestAnimationFrame(flush);
+window.addEventListener('load', () => plots.forEach(p => Plotly.Plots.resize(p.div)));
+
+function setRunning(on) {
+  document.getElementById('pause').disabled = !on; document.getElementById('stop').disabled = !on;
+  document.getElementById('pause').textContent = 'Pause'; paused = false;
+}
+function handle(list, seed) {
+  for (const ev of list) {
+    if (ev.type === 'step') { buf[ev.c].push(ev); last[ev.c] = ev; N = ev.N; }
+    else if (ev.type === 'decision') {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${ev.t.toFixed(0)}</td><td>${ev.Fs.toFixed(4)}</td><td>${ev.Fpaa.toFixed(4)}</td><td>${ev.pH_sp.toFixed(3)}</td><td>${ev.T_sp.toFixed(2)}</td>`;
+      document.getElementById('dec').prepend(tr);
+    }
+    else if (ev.type === 'done') { document.getElementById('n-' + ev.c).textContent = 'final'; last[ev.c] = {...(last[ev.c] || {}), yield: ev.yield}; }
+    else if (ev.type === 'error') document.getElementById('n-' + ev.c).textContent = 'failed: ' + ev.message;
+    else if (ev.type === 'stopped') document.getElementById('n-' + ev.c).textContent = 'stopped';
+    else if (ev.type === 'finished') { document.getElementById('state').textContent = `Batch ${seed} finished`; setRunning(false); if (es) es.close(); }
+  }
+}
+async function post(path) { return fetch(path, {method: 'POST'}).then(r => r.json()); }
+document.getElementById('start').onclick = async () => {
+  if (es) es.close();
+  const sd = document.getElementById('seed').value; HOURS = SEEDS[sd] ? Math.ceil(SEEDS[sd] / 10) * 10 : 320;
+  build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1;
+  document.getElementById('dec').innerHTML = '';
+  for (const c of C) { document.getElementById('y-' + c).textContent = '–'; document.getElementById('n-' + c).textContent = ''; }
+  document.getElementById('y-diff').textContent = '–';
+  const seed = document.getElementById('seed').value, speed = document.getElementById('speed').value;
+  await post(`/api/start?seed=${seed}&speed=${speed}`);
+  document.getElementById('state').textContent = `Running batch ${seed}`;
+  setRunning(true);
+  es = new EventSource('/api/stream');
+  es.onmessage = e => handle(JSON.parse(e.data), seed);
+};
+document.getElementById('pause').onclick = async () => {
+  const r = await post('/api/pause'); paused = r.paused;
+  document.getElementById('pause').textContent = paused ? 'Resume' : 'Pause';
+};
+document.getElementById('stop').onclick = () => post('/api/stop');
+document.getElementById('speed').onchange = e => post('/api/speed?speed=' + e.target.value);
+document.getElementById('theme').onclick = () => {
+  const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+  for (const p of plots) { Plotly.restyle(p.div, {'line.color': C.map(c => css('--' + c))}); Plotly.relayout(p.div, layout(p.div.layout.title.text, p.key)); }
+};
+fetch('/api/seeds').then(r => r.json()).then(list => {
+  list.forEach(s => SEEDS[s.seed] = s.hours);
+  document.getElementById('seedlist').innerHTML = list.map(s => `<option value="${s.seed}">${s.class}-yield batch, ${s.hours} h</option>`).join('');
+});
+</script>
+</body>
+</html>
