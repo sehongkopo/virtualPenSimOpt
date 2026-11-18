@@ -157,6 +157,9 @@ function build() {
 }
 build();
 
+// crypto.randomUUID needs HTTPS or localhost, so build the id from getRandomValues, which works over plain HTTP too
+const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+const SID = (() => { try { let v = sessionStorage.getItem('vbr-sid'); if (!v) { v = newId(); sessionStorage.setItem('vbr-sid', v); } return v; } catch (e) { return newId(); } })();
 let es = null, buf = {none: [], apc: [], ppo: []}, last = {}, N = 1, paused = false;
 const fmt = v => v == null || isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US');
 function draw() {
@@ -197,7 +200,7 @@ function handle(list, seed) {
     else if (ev.type === 'finished') { document.getElementById('state').textContent = `Batch ${seed} finished`; setRunning(false); if (es) es.close(); }
   }
 }
-async function post(path) { return fetch(path, {method: 'POST'}).then(r => r.json()); }
+async function post(path) { return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }
 document.getElementById('start').onclick = async () => {
   if (es) es.close();
   const sd = document.getElementById('seed').value; HOURS = SEEDS[sd] ? Math.ceil(SEEDS[sd] / 10) * 10 : 320;
@@ -206,10 +209,11 @@ document.getElementById('start').onclick = async () => {
   for (const c of C) { document.getElementById('y-' + c).textContent = '–'; document.getElementById('n-' + c).textContent = ''; }
   document.getElementById('y-diff').textContent = '–';
   const seed = document.getElementById('seed').value, speed = document.getElementById('speed').value;
-  await post(`/api/start?seed=${seed}&speed=${speed}`);
+  const r = await post(`/api/start?seed=${seed}&speed=${speed}`);
+  if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started.'; return; }
   document.getElementById('state').textContent = `Running batch ${seed}`;
   setRunning(true);
-  es = new EventSource('/api/stream');
+  es = new EventSource('/api/stream?sid=' + SID);
   es.onmessage = e => handle(JSON.parse(e.data), seed);
 };
 document.getElementById('pause').onclick = async () => {

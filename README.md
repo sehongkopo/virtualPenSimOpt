@@ -30,6 +30,15 @@ Python 3.9 or later is needed. PyTorch is not, because the policy is evaluated i
 fast as the computer allows. The batch seed can be any integer, and the 200 evaluation batches of the study are
 offered in the seed list.
 
+To serve the dashboard to other computers on the same network, bind it to all interfaces:
+
+```bash
+python -m vbr --host 0.0.0.0 --port 8060 --no-browser --max-runs 4
+```
+
+Each browser tab runs its own comparison. `--max-runs` caps how many run at once (each uses three processes), and a
+comparison that no browser has watched for five minutes is stopped.
+
 The dashboard shows
 - the on-line channels that the PPO policy reads (dissolved O₂, pH, temperature, off-gas CO₂, OUR, CER, base and
   coolant flows),
@@ -86,5 +95,4 @@ BSD 3-Clause (see `LICENSE`). IndPenSim is by Goldrick et al. (2015, 2019), and 
 
 - The simulator is IndPenSim, not a plant. The PPO policy has been tested only in this simulation.
 - APC acts on the true PAA concentration, as the released code does, and so represents an ideal Raman soft sensor.
-- The dashboard is meant for a local computer. It runs one comparison at a time and has no authentication, so it
-  should not be exposed to a network.
+- The dashboard has no authentication. Serve it only on a trusted network, not on the open internet.

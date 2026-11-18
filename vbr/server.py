@@ -58,6 +58,7 @@ class Run:
                       for c in CONTROLLERS]
         for p in self.procs: p.start()
         threading.Thread(target=self._drain, daemon=True).start()
+        self.seen = time.time()
         self._add({'type': 'start', 'seed': seed})
 
     def _add(self, ev):
@@ -81,8 +82,29 @@ class Run:
         self.stop.set(); self.paused.clear()
         for p in self.procs: p.join(timeout=5)
 
+    @property
+    def active(self):
+        return any(p.is_alive() for p in self.procs)
 
-STATE = {'run': None}
+
+# One run per browser session, keyed by a random id that the page keeps in sessionStorage.
+RUNS, RUNS_LOCK = {}, threading.Lock()
+MAX_RUNS = 4          # concurrent comparisons (three processes each); set with --max-runs
+IDLE_S = 300          # a run nobody has watched for this long is stopped and removed
+
+
+def _reaper():
+    while True:
+        time.sleep(30)
+        with RUNS_LOCK:
+            old = [k for k, r in RUNS.items() if time.time() - r.seen > IDLE_S]
+            gone = [RUNS.pop(k) for k in old]
+        for r in gone: r.close()
+
+
+def _sid(q):
+    sid = q.get('sid', '')
+    return sid if 8 <= len(sid) <= 64 and sid.replace('-', '').isalnum() else None
 
 
 def seeds_info():
@@ -111,9 +133,11 @@ class Handler(BaseHTTPRequestHandler):
         elif u.path == '/api/stream':
             self.send_response(200); self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Cache-Control', 'no-cache'); self.end_headers()
-            run, i = STATE['run'], 0
+            sid = _sid({k: v[0] for k, v in parse_qs(u.query).items()})
+            run, i = RUNS.get(sid), 0
             try:
-                while run is not None and run is STATE['run']:
+                while run is not None and RUNS.get(sid) is run:
+                    run.seen = time.time()
                     with run.lock: evs = run.events[i:]
                     i += len(evs)
                     if evs:
@@ -127,10 +151,22 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path); q = {k: v[0] for k, v in parse_qs(u.query).items()}
-        run = STATE['run']
+        sid = _sid(q)
+        if sid is None:
+            return self._json({'ok': False, 'message': 'missing session id'}, 400)
+        run = RUNS.get(sid)
         if u.path == '/api/start':
             if run: run.close()
-            STATE['run'] = Run(int(q.get('seed', 847)), float(q.get('speed', 10)))
+            with RUNS_LOCK:
+                RUNS.pop(sid, None)
+                busy = sum(r.active for r in RUNS.values())
+                if busy >= MAX_RUNS:
+                    return self._json({'ok': False, 'message': f'{busy} batches are running on the server. Try again in a minute.'}, 503)
+                try:
+                    seed = int(q.get('seed', 847)); speed = min(max(float(q.get('speed', 10)), 0.0), 1000.0)
+                except ValueError:
+                    return self._json({'ok': False, 'message': 'seed must be an integer'}, 400)
+                RUNS[sid] = Run(seed, speed)
             self._json({'ok': True})
         elif u.path == '/api/pause' and run:
             (run.paused.clear if run.paused.is_set() else run.paused.set)(); self._json({'paused': run.paused.is_set()})
@@ -146,7 +182,10 @@ def main():
     ap = argparse.ArgumentParser(description='Virtual bioreactor dashboard')
     ap.add_argument('--port', type=int, default=8050); ap.add_argument('--host', default='127.0.0.1')
     ap.add_argument('--no-browser', action='store_true')
+    ap.add_argument('--max-runs', type=int, default=MAX_RUNS, help='concurrent comparisons allowed')
     a = ap.parse_args()
+    globals()['MAX_RUNS'] = a.max_runs
+    threading.Thread(target=_reaper, daemon=True).start()
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     url = f'http://{a.host}:{a.port}/'
     print(f'Virtual bioreactor running at {url}  (Ctrl+C to stop)')
@@ -157,4 +196,4 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        if STATE['run']: STATE['run'].close()
+        for r in list(RUNS.values()): r.close()
