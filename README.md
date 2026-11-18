@@ -41,7 +41,7 @@ comparison that no browser has watched for five minutes is stopped.
 
 The dashboard shows
 - a fermenter for the controller selected (no intervention, APC or PPO), whose broth level follows the volume and
-  whose colour follows the biomass and turns murky when PAA is toxic, with the impeller, aeration and feeds running,
+  whose hue shows the controller and deepens with the biomass, turning murky when PAA is toxic, with the impeller, aeration and feeds running,
 - dials for dissolved O₂, pH, PAA, sugar, biomass and penicillin, with a red blinking lamp when a variable is in a
   range that needs action (PAA above 2,400 mg/L, sugar above 10 g/L after 20 h, biomass or penicillin falling from
   its peak, DO below 5 mg/L, pH more than 0.25 from 6.5) and an amber lamp as it approaches,
