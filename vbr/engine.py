@@ -47,6 +47,7 @@ def snapshot(X, k, h):
         'DO2': g('DO2'), 'pH': _ph(g('pH')), 'T': g('T'),
         'CO2': g('CO2outgas'), 'OUR': g('OUR'), 'CER': g('CER'),
         'Fs': g('Fs'), 'Fpaa': g('Fpaa'), 'Fb': g('Fb'), 'Fc': g('Fc'),
+        'Foil': g('Foil'), 'Fg': g('Fg'), 'RPM': g('RPM'),
         'PAA': g('PAA'), 'S': g('S'), 'X': g('a0') + g('a1') + g('a3') + g('a4'), 'P': P, 'V': V,
         'yield': (V * P - harvested) / 1000.0,
     }

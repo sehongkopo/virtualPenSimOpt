@@ -9,66 +9,121 @@
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
 :root {
-  --bg: #f4f6f5; --panel: #ffffff; --ink: #18211e; --muted: #5d6b66; --line: #d9e0dd; --grid: #e9eeec;
-  --none: #8a948f; --apc: #c7782a; --ppo: #127a6b; --warn: #b3261e; --accent: #127a6b;
+  --bg: #eef1ef; --panel: #ffffff; --ink: #18211e; --muted: #5d6b66; --line: #d6dedb; --grid: #e7ecea;
+  --steel: #b9c3c0; --steel-dark: #7d8a86; --glass: #f7faf9;
+  --none: #8a948f; --apc: #c7782a; --ppo: #127a6b; --accent: #127a6b;
+  --ok: #2f8f5b; --warn: #d39b1f; --danger: #d0352b;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #101513; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
-    --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --warn: #ef6b62; --accent: #3fbfa8;
+    --bg: #0f1412; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
+    --steel: #4c5754; --steel-dark: #8d9995; --glass: #1d2522;
+    --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --accent: #3fbfa8;
+    --ok: #4cbf82; --warn: #e8b84a; --danger: #f0574c;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #101513; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
-  --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --warn: #ef6b62; --accent: #3fbfa8;
+  --bg: #0f1412; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
+  --steel: #4c5754; --steel-dark: #8d9995; --glass: #1d2522;
+  --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --accent: #3fbfa8;
+  --ok: #4cbf82; --warn: #e8b84a; --danger: #f0574c;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 'IBM Plex Sans', system-ui, sans-serif; }
-header { padding: 18px 24px 10px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
-h1 { font-size: 20px; margin: 0; font-weight: 600; }
-.sub { color: var(--muted); font-size: 13px; margin-top: 2px; max-width: 70ch; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+header { padding: 14px 20px 8px; display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: end; justify-content: space-between; }
+h1 { font-size: 19px; margin: 0; font-weight: 600; }
+.sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; max-width: 72ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
 select, input, button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
 input[type=number] { width: 7em; font-family: 'IBM Plex Mono', monospace; }
 button { cursor: pointer; font-weight: 500; }
 button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-main { padding: 0 24px 32px; display: grid; gap: 14px; }
-.status { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; color: var(--muted); font-size: 13px; }
-.bar { flex: 1 1 240px; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; min-width: 160px; }
-.bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 .mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; border-top: 3px solid var(--c); }
-.tile .name { font-size: 12px; color: var(--muted); }
-.tile .val { font: 500 24px 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.tile .note { font-size: 12px; color: var(--muted); min-height: 1.2em; }
-section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
-section h2 { font-size: 14px; margin: 0 0 2px; font-weight: 600; }
-section p.cap { margin: 0 0 6px; color: var(--muted); font-size: 12.5px; }
-.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 10px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 4px 10px; }
-.grid4 > *, .grid2 > *, .two > * { min-width: 0; }
-.plot { height: 190px; width: 100%; overflow: hidden; }
-.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); }
-.legend i { display: inline-block; width: 14px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 6px; }
-.two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; }
-@media (max-width: 820px) { .two { grid-template-columns: 1fr; } header, main { padding-left: 16px; padding-right: 16px; } }
-.log { max-height: 330px; overflow: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-th, td { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); }
+
+/* progress */
+.progress { padding: 0 20px 10px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; font-size: 13px; color: var(--muted); }
+.track { height: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; position: relative; }
+.track .fill { height: 100%; width: 0; background: var(--accent); transition: width .25s linear; }
+.track .mark { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: .5; }
+.track .mark span { position: absolute; top: 14px; left: -10px; font-size: 10px; }
+
+main { padding: 0 20px 28px; display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.panel h2 { font-size: 13.5px; margin: 0 0 6px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
+.left, .right { display: grid; gap: 14px; align-content: start; min-width: 0; }
+
+/* controller view selector */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 5px 10px; font-size: 12.5px; background: var(--panel); color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--c); color: #fff; }
+
+/* reactor */
+#reactor { width: 100%; height: auto; display: block; }
+.reactor-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+.reactor-meta div { font-size: 11.5px; color: var(--muted); }
+.reactor-meta b { display: block; font: 500 15px 'IBM Plex Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+.blade { transform-box: fill-box; transform-origin: center; animation: spin var(--spin, .6s) linear infinite; }
+@keyframes spin { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+.bubble { animation: rise var(--bdur, 3s) linear infinite; opacity: .75; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: .8; } 100% { transform: translateY(var(--rise, -260px)); opacity: 0; } }
+.drop { animation: drip var(--ddur, 1.2s) linear infinite; }
+@keyframes drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(46px); opacity: 0; } }
+.surface { animation: wave 2.4s ease-in-out infinite alternate; }
+@keyframes wave { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
+svg.idle .blade, svg.idle .bubble, svg.idle .drop, svg.idle .surface { animation-play-state: paused; }
+svg.idle .drop, svg.idle .bubble { opacity: 0; }
+
+/* yield tiles */
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; border-left: 4px solid var(--c); }
+.tile .name { font-size: 11.5px; color: var(--muted); }
+.tile .val { font: 500 20px 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.up { color: var(--ppo); } .down { color: var(--apc); }
+
+/* gauges */
+.gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.gauge { border: 1px solid var(--line); border-radius: 10px; padding: 6px 6px 8px; text-align: center; position: relative; }
+.gauge svg { width: 100%; max-width: 170px; height: auto; display: block; margin: 0 auto; }
+.gauge .gname { font-size: 12.5px; font-weight: 600; }
+.gauge .gstate { font-size: 11px; color: var(--muted); min-height: 1.3em; }
+.lamp { position: absolute; top: 8px; right: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 2px var(--panel); }
+.gauge.warn .lamp { background: var(--warn); }
+.gauge.danger { border-color: var(--danger); }
+.gauge.danger .lamp { background: var(--danger); animation: blink .8s steps(1, end) infinite; box-shadow: 0 0 10px 3px var(--danger); }
+.gauge.danger .gstate { color: var(--danger); font-weight: 600; }
+@keyframes blink { 50% { opacity: .15; box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .gauge.danger .lamp, .blade, .bubble, .drop, .surface { animation: none; }
+}
+.needle { transition: transform .3s ease-out; transform-origin: 80px 80px; }
+
+/* plots */
+.plots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .plots { grid-template-columns: 1fr; } }
+.plots > .panel { min-width: 0; }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 2px 8px; }
+.plot { height: 165px; width: 100%; overflow: hidden; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 14px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+.log { max-height: 210px; overflow: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { padding: 2px 5px; text-align: right; border-bottom: 1px solid var(--grid); }
 th:first-child, td:first-child { text-align: left; }
 th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
 td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.up { color: var(--ppo); } .down { color: var(--apc); }
+.note { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>Virtual Bioreactor · 100,000 L penicillin fed-batch</h1>
-    <div class="sub">The same IndPenSim batch runs live under three controllers. The PPO policy reads only the sixteen on-line channels and sets ten operating variables every 6 h from 12 h. APC holds the true PAA at 1,200 mg/L.</div>
+    <div class="sub">One IndPenSim batch runs live under three controllers. PPO reads only the on-line channels and sets ten operating variables every 6 h. APC holds the true PAA at 1,200 mg/L.</div>
   </div>
   <div class="controls">
     <label>Batch seed <input id="seed" type="number" value="847" min="0" list="seedlist"></label>
@@ -82,74 +137,264 @@ td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums
     <button class="primary" id="start">Start batch</button>
     <button id="pause" disabled>Pause</button>
     <button id="stop" disabled>Stop</button>
-    <button id="theme" title="Switch light and dark">◐</button>
+    <button id="theme" title="Switch light and dark" aria-label="Switch light and dark">◐</button>
   </div>
 </header>
+
+<div class="progress">
+  <span id="state">Choose a seed and start a batch.</span>
+  <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="track"><div class="fill" id="prog"></div></div>
+  <span class="mono" id="clock">0.0 h · 0 %</span>
+</div>
+
 <main>
-  <div class="status">
-    <span id="state">Choose a seed and start a batch.</span>
-    <span class="mono" id="clock">0.0 h</span>
-    <div class="bar"><div id="prog"></div></div>
-    <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span></span>
-  </div>
-  <div class="tiles">
-    <div class="tile" style="--c:var(--none)"><div class="name">Net yield · no intervention</div><div class="val" id="y-none">–</div><div class="note" id="n-none"></div></div>
-    <div class="tile" style="--c:var(--apc)"><div class="name">Net yield · APC</div><div class="val" id="y-apc">–</div><div class="note" id="n-apc"></div></div>
-    <div class="tile" style="--c:var(--ppo)"><div class="name">Net yield · PPO</div><div class="val" id="y-ppo">–</div><div class="note" id="n-ppo"></div></div>
-    <div class="tile" style="--c:var(--accent)"><div class="name">PPO − APC</div><div class="val" id="y-diff">–</div><div class="note">kg of penicillin, same batch</div></div>
-  </div>
-  <section>
-    <h2>What the PPO policy sees</h2>
-    <p class="cap">On-line channels recorded by the plant. The policy also reads the vessel weight and volume, off-gas O₂, the current feeds and the batch time.</p>
-    <div class="grid4" id="g-online"></div>
-  </section>
-  <div class="two">
-    <section>
-      <h2>What the controllers set</h2>
-      <p class="cap">Sugar and PAA feeds actually applied. APC changes only the PAA feed. PPO also adjusts eight other variables, which stay within a few percent of the recipe.</p>
-      <div class="grid2" id="g-act"></div>
+  <div class="left">
+    <section class="panel">
+      <h2>Fermenter <span class="seg" id="view">
+        <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
+        <button style="--c:var(--apc)" data-c="apc" aria-pressed="false">APC</button>
+        <button style="--c:var(--ppo)" data-c="ppo" aria-pressed="true">PPO</button>
+      </span></h2>
+      <svg id="reactor" class="idle" viewBox="0 0 320 470" aria-label="Fermenter of the selected controller">
+        <defs>
+          <clipPath id="inner"><rect x="72" y="78" width="176" height="326" rx="34"/></clipPath>
+          <linearGradient id="shine" x1="0" x2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity=".0"/><stop offset=".18" stop-color="#fff" stop-opacity=".28"/>
+            <stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/>
+          </linearGradient>
+        </defs>
+        <!-- feed lines -->
+        <g id="feedS">
+          <path d="M8 34 H110 V70" fill="none" stroke="var(--steel-dark)" stroke-width="6" stroke-linecap="round"/>
+          <text x="10" y="26" font-size="11" fill="var(--muted)">Sugar Fs</text>
+          <text x="10" y="50" font-size="11" fill="var(--ink)" class="mono" id="fsTxt">– L/h</text>
+          <circle class="drop" cx="110" cy="84" r="3.2" fill="#e8c86a"/>
+        </g>
+        <g id="feedP">
+          <path d="M312 34 H210 V70" fill="none" stroke="var(--steel-dark)" stroke-width="6" stroke-linecap="round"/>
+          <text x="310" y="26" font-size="11" fill="var(--muted)" text-anchor="end">PAA Fpaa</text>
+          <text x="310" y="50" font-size="11" fill="var(--ink)" class="mono" text-anchor="end" id="fpTxt">– L/h</text>
+          <circle class="drop" cx="210" cy="84" r="3.2" fill="#9fb7d9"/>
+        </g>
+        <!-- motor and shaft -->
+        <rect x="146" y="6" width="28" height="30" rx="4" fill="var(--steel-dark)"/>
+        <rect x="140" y="34" width="40" height="8" rx="2" fill="var(--steel)"/>
+        <!-- jacket and vessel -->
+        <rect x="62" y="68" width="196" height="346" rx="42" fill="var(--steel)"/>
+        <rect x="72" y="78" width="176" height="326" rx="34" fill="var(--glass)"/>
+        <g clip-path="url(#inner)">
+          <rect id="broth" x="60" y="250" width="200" height="200" fill="#e9d9a0"/>
+          <path id="surface" class="surface" d="M50 250 Q75 244 100 250 T150 250 T200 250 T250 250 T300 250 V262 H50 Z" fill="#e9d9a0"/>
+          <g id="bubbles"></g>
+        </g>
+        <rect x="72" y="78" width="176" height="326" rx="34" fill="url(#shine)" pointer-events="none"/>
+        <line x1="160" y1="42" x2="160" y2="380" stroke="var(--steel-dark)" stroke-width="5"/>
+        <g class="blade"><rect x="122" y="296" width="76" height="10" rx="3" fill="var(--steel-dark)"/></g>
+        <g class="blade"><rect x="122" y="196" width="76" height="10" rx="3" fill="var(--steel-dark)"/></g>
+        <!-- baffles and sparger -->
+        <rect x="80" y="120" width="5" height="250" fill="var(--steel)" opacity=".8"/>
+        <rect x="235" y="120" width="5" height="250" fill="var(--steel)" opacity=".8"/>
+        <path d="M118 384 H202" stroke="var(--steel-dark)" stroke-width="4" stroke-linecap="round"/>
+        <!-- probes -->
+        <line x1="100" y1="74" x2="104" y2="300" stroke="var(--ink)" stroke-width="3" opacity=".6"/>
+        <text x="112" y="140" font-size="10" fill="var(--muted)">DO · pH · T probe</text>
+        <!-- legs and labels -->
+        <rect x="84" y="414" width="10" height="38" fill="var(--steel-dark)"/>
+        <rect x="226" y="414" width="10" height="38" fill="var(--steel-dark)"/>
+        <rect x="70" y="450" width="180" height="6" rx="3" fill="var(--steel-dark)"/>
+        <text x="160" y="436" font-size="11" fill="var(--ink)" text-anchor="middle" class="mono" id="volTxt">– L</text>
+      </svg>
+      <div class="reactor-meta">
+        <div>Batch time<b id="mTime">–</b></div>
+        <div>Temperature<b id="mT">–</b></div>
+        <div>Off-gas CO₂<b id="mCO2">–</b></div>
+      </div>
+      <p class="note">Broth colour follows the biomass and turns murky when PAA is above the toxic threshold.</p>
     </section>
-    <section>
-      <h2>PPO decisions</h2>
-      <p class="cap">Multipliers on the recipe, every 6 h.</p>
+
+    <section class="panel">
+      <h2>Net penicillin yield <small>kg, same batch</small></h2>
+      <div class="tiles">
+        <div class="tile" style="--c:var(--none)"><div class="name">No intervention</div><div class="val" id="y-none">–</div></div>
+        <div class="tile" style="--c:var(--apc)"><div class="name">APC</div><div class="val" id="y-apc">–</div></div>
+        <div class="tile" style="--c:var(--ppo)"><div class="name">PPO</div><div class="val" id="y-ppo">–</div></div>
+        <div class="tile" style="--c:var(--accent)"><div class="name">PPO − APC</div><div class="val" id="y-diff">–</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>PPO decisions <small>multipliers on the recipe, every 6 h</small></h2>
       <div class="log"><table><thead><tr><th>Time (h)</th><th>Fs ×</th><th>Fpaa ×</th><th>pH sp</th><th>T sp (K)</th></tr></thead><tbody id="dec"></tbody></table></div>
     </section>
   </div>
-  <section>
-    <h2>Inside the broth</h2>
-    <p class="cap">Not measured on-line, and not available to the PPO policy. Shown here to compare the controllers. The dotted line on PAA marks the toxic threshold of 2,400 mg/L.</p>
-    <div class="grid4" id="g-hidden"></div>
-  </section>
+
+  <div class="right">
+    <section class="panel">
+      <h2>Culture state <small id="gview">PPO</small></h2>
+      <div class="gauges" id="gauges"></div>
+      <p class="note">Red blinking lamp: the variable is in a range that needs action — PAA above the toxic 2,400 mg/L, sugar accumulating, biomass or penicillin falling from its peak, or DO and pH far from normal. Amber: approaching it. PAA, sugar, biomass and penicillin are not measured on-line and are not available to PPO.</p>
+    </section>
+    <div class="plots">
+      <section class="panel">
+        <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>None</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span></span></h2>
+        <div class="pgrid" id="g-op"></div>
+      </section>
+      <section class="panel">
+        <h2>Observed variables <small>on-line</small></h2>
+        <div class="pgrid" id="g-obs"></div>
+      </section>
+    </div>
+  </div>
 </main>
+
 <script>
 const C = ['none', 'apc', 'ppo'];
+const NAMES = {none: 'No intervention', apc: 'APC', ppo: 'PPO'};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let HOURS = 320, SEEDS = {}, VIEW = 'ppo';
+
+/* ── gauges ───────────────────────────────────────────────────────────── */
+// zones: [from, to, level]; alarm(v, s) can override from history (falling biomass or penicillin)
+const GAUGES = [
+  {key: 'DO2', name: 'Dissolved O₂', unit: 'mg/L', min: 0, max: 20, fmt: 1,
+   zones: [[0, 5, 'danger'], [5, 8, 'warn'], [8, 20, 'ok']]},
+  {key: 'pH', name: 'pH', unit: '', min: 6.0, max: 7.0, fmt: 2,
+   zones: [[6.0, 6.25, 'danger'], [6.25, 6.35, 'warn'], [6.35, 6.65, 'ok'], [6.65, 6.75, 'warn'], [6.75, 7.0, 'danger']]},
+  {key: 'PAA', name: 'PAA', unit: 'mg/L', min: 0, max: 5000, fmt: 0,
+   zones: [[0, 2000, 'ok'], [2000, 2400, 'warn'], [2400, 5000, 'danger']]},
+  {key: 'S', name: 'Sugar', unit: 'g/L', min: 0, max: 40, fmt: 2,
+   zones: [[0, 5, 'ok'], [5, 10, 'warn'], [10, 40, 'danger']], after: 20},
+  {key: 'X', name: 'Biomass X', unit: 'g/L', min: 0, max: 30, fmt: 1, zones: [[0, 30, 'ok']], peak: [0.03, 0.08]},
+  {key: 'P', name: 'Penicillin P', unit: 'g/L', min: 0, max: 50, fmt: 1, zones: [[0, 50, 'ok']], peak: [0.02, 0.05]},
+];
+const A0 = -135, A1 = 135, R = 62, CX = 80, CY = 80;
+const ang = (g, v) => A0 + (A1 - A0) * Math.min(1, Math.max(0, (v - g.min) / (g.max - g.min)));
+const pt = (a, r) => [CX + r * Math.sin(a * Math.PI / 180), CY - r * Math.cos(a * Math.PI / 180)];
+function arc(a0, a1, r) {
+  const [x0, y0] = pt(a0, r), [x1, y1] = pt(a1, r);
+  return `M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+}
+function buildGauges() {
+  const box = document.getElementById('gauges'); box.innerHTML = '';
+  for (const g of GAUGES) {
+    const el = document.createElement('div'); el.className = 'gauge'; el.id = 'g-' + g.key;
+    let ticks = '';
+    for (let i = 0; i <= 8; i++) {                       // compass-like tick ring
+      const a = A0 + (A1 - A0) * i / 8, [x0, y0] = pt(a, R - 12), [x1, y1] = pt(a, R - (i % 2 ? 16 : 20));
+      ticks += `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--muted)" stroke-width="${i % 2 ? 1 : 1.6}"/>`;
+      if (i % 2 === 0 && i > 0 && i < 8) { const [tx, ty] = pt(a, R - 30); const v = g.min + (g.max - g.min) * i / 8;
+        ticks += `<text x="${tx}" y="${ty + 3}" font-size="8.5" text-anchor="middle" fill="var(--muted)">${+v.toFixed(g.max < 10 ? 1 : 0)}</text>`; }
+    }
+    const zones = g.zones.map(([a, b, lv]) => `<path d="${arc(ang(g, a), ang(g, b), R)}" stroke="var(--${lv})" stroke-width="7" fill="none" opacity="${lv === 'ok' ? .45 : .85}"/>`).join('');
+    el.innerHTML = `<span class="lamp" aria-hidden="true"></span>
+      <svg viewBox="0 0 160 150" role="img" aria-label="${g.name}">
+        <circle cx="${CX}" cy="${CY}" r="${R + 8}" fill="none" stroke="var(--line)" stroke-width="1"/>
+        <path d="${arc(A0, A1, R)}" stroke="var(--grid)" stroke-width="7" fill="none"/>${zones}${ticks}
+        <text x="${CX}" y="${CY - 18}" font-size="9" text-anchor="middle" fill="var(--muted)">N</text>
+        <g class="needle" id="n-${g.key}" style="transform: rotate(${A0}deg)">
+          <path d="M${CX - 4} ${CY} L${CX} ${CY - R + 4} L${CX + 4} ${CY} Z" fill="var(--ink)"/>
+          <path d="M${CX - 3} ${CY} L${CX} ${CY + 14} L${CX + 3} ${CY} Z" fill="var(--muted)"/>
+        </g>
+        <circle cx="${CX}" cy="${CY}" r="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>
+        <text x="${CX}" y="${CY + 38}" font-size="16" text-anchor="middle" fill="var(--ink)" font-family="IBM Plex Mono, monospace" id="v-${g.key}">–</text>
+        <text x="${CX}" y="${CY + 50}" font-size="9" text-anchor="middle" fill="var(--muted)">${g.unit}</text>
+      </svg>
+      <div class="gname">${g.name}</div><div class="gstate" id="s-${g.key}">–</div>`;
+    box.appendChild(el);
+  }
+}
+buildGauges();
+const PEAK = {};                 // running maximum per controller and variable, to detect a fall from the peak
+function level(g, s, c) {
+  if (g.after && s.t < g.after) return ['ok', 'normal'];
+  if (g.peak) {
+    const k = c + g.key; PEAK[k] = Math.max(PEAK[k] || 0, s[g.key]);
+    const drop = PEAK[k] > 1 ? 1 - s[g.key] / PEAK[k] : 0;
+    if (drop > g.peak[1]) return ['danger', `falling, −${(100 * drop).toFixed(0)} % from peak`];
+    if (drop > g.peak[0]) return ['warn', `−${(100 * drop).toFixed(0)} % from peak`];
+    return ['ok', 'normal'];
+  }
+  const v = s[g.key], z = g.zones.find(([a, b]) => v >= a && v < b) || (v >= g.max ? g.zones[g.zones.length - 1] : g.zones[0]);
+  const msg = {ok: 'normal', warn: 'approaching limit', danger: 'needs action'}[z[2]];
+  return [z[2], msg];
+}
+function updateGauges(s, c) {
+  for (const g of GAUGES) {
+    const v = s[g.key];
+    document.getElementById('n-' + g.key).style.transform = `rotate(${ang(g, v)}deg)`;
+    document.getElementById('v-' + g.key).textContent = v.toFixed(g.fmt);
+    const [lv, msg] = level(g, s, c);
+    const el = document.getElementById('g-' + g.key); el.className = 'gauge ' + lv;
+    document.getElementById('s-' + g.key).textContent = msg;
+  }
+}
+
+/* ── fermenter ────────────────────────────────────────────────────────── */
+const bubbles = document.getElementById('bubbles');
+for (let i = 0; i < 18; i++) {
+  const b = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  b.setAttribute('cx', 122 + (i * 37) % 80); b.setAttribute('cy', 380); b.setAttribute('r', 2 + (i % 3));
+  b.setAttribute('fill', '#ffffff'); b.setAttribute('class', 'bubble'); b.style.animationDelay = (-i * 0.37) + 's';
+  bubbles.appendChild(b);
+}
+const mix = (a, b, f) => a.map((x, i) => Math.round(x + (b[i] - x) * f));
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const rgb = a => `rgb(${a.join(',')})`;
+function brothColour(s) {
+  const fx = Math.min(1, Math.max(0, s.X / 25));                       // pale straw → amber with biomass
+  let col = mix(hex('#efe6bd'), hex('#b0702a'), fx);
+  const tox = Math.min(1, Math.max(0, (s.PAA - 2000) / 2500));         // murky olive when PAA is toxic
+  col = mix(col, hex('#6b6a43'), 0.75 * tox);
+  const sug = Math.min(1, Math.max(0, (s.S - 5) / 30));                // milky when sugar accumulates
+  return rgb(mix(col, hex('#d9d4c4'), 0.35 * sug));
+}
+function updateReactor(s) {
+  const top = 404 - 326 * Math.min(1, s.V / 105000);                   // vessel inner height ~ 105 m³
+  document.getElementById('broth').setAttribute('y', top);
+  const surf = document.getElementById('surface');
+  surf.setAttribute('d', `M50 ${top} Q75 ${top - 6} 100 ${top} T150 ${top} T200 ${top} T250 ${top} T300 ${top} V${top + 12} H50 Z`);
+  const col = brothColour(s); document.getElementById('broth').setAttribute('fill', col); surf.setAttribute('fill', col);
+  document.getElementById('reactor').style.setProperty('--rise', `${top - 378}px`);
+  document.getElementById('reactor').style.setProperty('--bdur', `${Math.max(1.2, 4 - (s.Fg || 0) / 40)}s`);
+  document.getElementById('reactor').style.setProperty('--spin', `${60 / Math.max(30, (s.RPM || 100)) * 0.5}s`);
+  const fs = document.querySelector('#feedS .drop'), fp = document.querySelector('#feedP .drop');
+  fs.style.setProperty('--ddur', `${Math.max(0.4, 3 - s.Fs / 60)}s`); fs.style.display = s.Fs > 0.5 ? '' : 'none';
+  fp.style.setProperty('--ddur', `${Math.max(0.5, 3 - s.Fpaa / 5)}s`); fp.style.display = s.Fpaa > 0.05 ? '' : 'none';
+  document.getElementById('fsTxt').textContent = s.Fs.toFixed(1) + ' L/h';
+  document.getElementById('fpTxt').textContent = s.Fpaa.toFixed(2) + ' L/h';
+  document.getElementById('volTxt').textContent = Math.round(s.V).toLocaleString('en-US') + ' L';
+  document.getElementById('mTime').textContent = s.t.toFixed(1) + ' h';
+  document.getElementById('mT').textContent = (s.T - 273.15).toFixed(2) + ' °C';
+  document.getElementById('mCO2').textContent = s.CO2.toFixed(2) + ' %';
+}
+
+/* ── plots ────────────────────────────────────────────────────────────── */
 const PANELS = {
-  'g-online': [['DO2', 'Dissolved O₂ (mg/L)'], ['pH', 'pH'], ['T', 'Temperature (K)'], ['CO2', 'Off-gas CO₂ (%)'],
-               ['OUR', 'OUR'], ['CER', 'CER'], ['Fb', 'Base flow Fb (L/h)'], ['Fc', 'Coolant flow Fc (L/h)']],
-  'g-act': [['Fs', 'Sugar feed Fs (L/h)'], ['Fpaa', 'PAA feed Fpaa (L/h)']],
-  'g-hidden': [['PAA', 'PAA (mg/L)'], ['S', 'Sugar S (g/L)'], ['X', 'Biomass (g/L)'], ['yield', 'Net penicillin yield (kg)']],
+  'g-op': [['Fs', 'Sugar feed Fs (L/h)'], ['Fpaa', 'PAA feed Fpaa (L/h)'], ['Foil', 'Oil feed Foil (L/h)'],
+           ['Fg', 'Aeration Fg (m³/min)'], ['Fb', 'Base flow Fb (L/h)'], ['Fc', 'Coolant flow Fc (L/h)']],
+  'g-obs': [['DO2', 'Dissolved O₂ (mg/L)'], ['pH', 'pH'], ['T', 'Temperature (K)'],
+            ['CO2', 'Off-gas CO₂ (%)'], ['OUR', 'OUR'], ['CER', 'CER']],
 };
 const plots = [];
-let HOURS = 320, SEEDS = {};
-function layout(title, key) {
-  const shapes = key === 'PAA' ? [{type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 2400, y1: 2400, line: {color: css('--warn'), dash: 'dot', width: 1}}] : [];
+function layout(title) {
   return {
-    title: {text: title, font: {size: 12, color: css('--ink')}, x: 0.02, y: 0.96},
-    margin: {l: 52, r: 8, t: 26, b: 28}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-    font: {family: 'IBM Plex Sans, sans-serif', size: 10.5, color: css('--muted')},
-    xaxis: {title: {text: 'h', standoff: 2}, gridcolor: css('--grid'), zeroline: false, range: [0, HOURS]},
-    yaxis: {gridcolor: css('--grid'), zeroline: false}, showlegend: false, shapes, autosize: true,
+    title: {text: title, font: {size: 11.5, color: css('--ink')}, x: 0.02, y: 0.96},
+    margin: {l: 46, r: 6, t: 24, b: 26}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {family: 'IBM Plex Sans, sans-serif', size: 10, color: css('--muted')},
+    xaxis: {gridcolor: css('--grid'), zeroline: false, range: [0, HOURS], ticksuffix: ' h'},
+    yaxis: {gridcolor: css('--grid'), zeroline: false}, showlegend: false, autosize: true,
   };
 }
+const lineW = c => c === VIEW ? 2.2 : 1.1;
 function build() {
   plots.length = 0;
   for (const [gid, items] of Object.entries(PANELS)) {
     const g = document.getElementById(gid); g.innerHTML = '';
     for (const [key, title] of items) {
       const div = document.createElement('div'); div.className = 'plot'; g.appendChild(div);
-      const traces = C.map(c => ({x: [], y: [], mode: 'lines', line: {color: css('--' + c), width: c === 'ppo' ? 2 : 1.4}, name: c, hovertemplate: '%{x:.1f} h · %{y:.4g}<extra>' + c + '</extra>'}));
-      Plotly.newPlot(div, traces, layout(title, key), {displayModeBar: false, responsive: true});
+      const traces = C.map(c => ({x: [], y: [], mode: 'lines', line: {color: css('--' + c), width: lineW(c)}, name: NAMES[c],
+                                  hovertemplate: '%{x:.1f} h · %{y:.4g}<extra>' + NAMES[c] + '</extra>'}));
+      Plotly.newPlot(div, traces, layout(title), {displayModeBar: false, responsive: true});
       plots.push({div, key});
       new ResizeObserver(() => Plotly.Plots.resize(div)).observe(div);
     }
@@ -157,10 +402,8 @@ function build() {
 }
 build();
 
-// crypto.randomUUID needs HTTPS or localhost, so build the id from getRandomValues, which works over plain HTTP too
-const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
-const SID = (() => { try { let v = sessionStorage.getItem('vbr-sid'); if (!v) { v = newId(); sessionStorage.setItem('vbr-sid', v); } return v; } catch (e) { return newId(); } })();
-let es = null, buf = {none: [], apc: [], ppo: []}, last = {}, N = 1, paused = false;
+/* ── state, drawing ───────────────────────────────────────────────────── */
+let es = null, buf = {none: [], apc: [], ppo: []}, last = {}, N = 1, running = false;
 const fmt = v => v == null || isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US');
 function draw() {
   for (const p of plots) {
@@ -171,20 +414,23 @@ function draw() {
   for (const c of C) buf[c] = [];
   for (const c of C) if (last[c]) document.getElementById('y-' + c).textContent = fmt(last[c].yield);
   if (last.apc && last.ppo) {
-    const d = last.ppo.yield - last.apc.yield;
-    const el = document.getElementById('y-diff'); el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)); el.className = 'val ' + (d >= 0 ? 'up' : 'down');
+    const d = last.ppo.yield - last.apc.yield, el = document.getElementById('y-diff');
+    el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)); el.className = 'val ' + (d >= 0 ? 'up' : 'down');
   }
-  const t = Math.min(...C.map(c => last[c] ? last[c].t : 0));
-  document.getElementById('clock').textContent = t.toFixed(1) + ' h';
-  document.getElementById('prog').style.width = Math.min(100, 100 * t / (N * 0.2)) + '%';
+  const s = last[VIEW];
+  if (s && s.DO2 !== undefined) { updateReactor(s); updateGauges(s, VIEW); }
+  const t = Math.min(...C.map(c => last[c] && last[c].t !== undefined ? last[c].t : 0)), pc = Math.min(100, 100 * t / (N * 0.2));
+  document.getElementById('clock').textContent = `${t.toFixed(1)} h · ${pc.toFixed(0)} %`;
+  document.getElementById('prog').style.width = pc + '%'; document.getElementById('track').setAttribute('aria-valuenow', pc.toFixed(0));
 }
 function flush() { draw(); requestAnimationFrame(flush); }
 requestAnimationFrame(flush);
-window.addEventListener('load', () => plots.forEach(p => Plotly.Plots.resize(p.div)));
 
 function setRunning(on) {
+  running = on;
   document.getElementById('pause').disabled = !on; document.getElementById('stop').disabled = !on;
-  document.getElementById('pause').textContent = 'Pause'; paused = false;
+  document.getElementById('pause').textContent = 'Pause';
+  document.getElementById('reactor').classList.toggle('idle', !on);
 }
 function handle(list, seed) {
   for (const ev of list) {
@@ -194,21 +440,25 @@ function handle(list, seed) {
       tr.innerHTML = `<td>${ev.t.toFixed(0)}</td><td>${ev.Fs.toFixed(4)}</td><td>${ev.Fpaa.toFixed(4)}</td><td>${ev.pH_sp.toFixed(3)}</td><td>${ev.T_sp.toFixed(2)}</td>`;
       document.getElementById('dec').prepend(tr);
     }
-    else if (ev.type === 'done') { document.getElementById('n-' + ev.c).textContent = 'final'; last[ev.c] = {...(last[ev.c] || {}), yield: ev.yield}; }
-    else if (ev.type === 'error') document.getElementById('n-' + ev.c).textContent = 'failed: ' + ev.message;
-    else if (ev.type === 'stopped') document.getElementById('n-' + ev.c).textContent = 'stopped';
+    else if (ev.type === 'done') { last[ev.c] = {...(last[ev.c] || {}), yield: ev.yield}; }
+    else if (ev.type === 'error') document.getElementById('state').textContent = `${NAMES[ev.c]} failed: ${ev.message}`;
     else if (ev.type === 'finished') { document.getElementById('state').textContent = `Batch ${seed} finished`; setRunning(false); if (es) es.close(); }
   }
 }
+// crypto.randomUUID needs HTTPS or localhost, so build the id from getRandomValues, which works over plain HTTP too
+const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+const SID = (() => { try { let v = sessionStorage.getItem('vbr-sid'); if (!v) { v = newId(); sessionStorage.setItem('vbr-sid', v); } return v; } catch (e) { return newId(); } })();
 async function post(path) { return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }
+
 document.getElementById('start').onclick = async () => {
   if (es) es.close();
-  const sd = document.getElementById('seed').value; HOURS = SEEDS[sd] ? Math.ceil(SEEDS[sd] / 10) * 10 : 320;
-  build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1;
-  document.getElementById('dec').innerHTML = '';
-  for (const c of C) { document.getElementById('y-' + c).textContent = '–'; document.getElementById('n-' + c).textContent = ''; }
-  document.getElementById('y-diff').textContent = '–';
   const seed = document.getElementById('seed').value, speed = document.getElementById('speed').value;
+  HOURS = SEEDS[seed] ? Math.ceil(SEEDS[seed] / 10) * 10 : 320;
+  build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1;
+  for (const k in PEAK) delete PEAK[k];
+  document.getElementById('dec').innerHTML = '';
+  for (const c of C) document.getElementById('y-' + c).textContent = '–';
+  document.getElementById('y-diff').textContent = '–';
   const r = await post(`/api/start?seed=${seed}&speed=${speed}`);
   if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started.'; return; }
   document.getElementById('state').textContent = `Running batch ${seed}`;
@@ -217,16 +467,25 @@ document.getElementById('start').onclick = async () => {
   es.onmessage = e => handle(JSON.parse(e.data), seed);
 };
 document.getElementById('pause').onclick = async () => {
-  const r = await post('/api/pause'); paused = r.paused;
-  document.getElementById('pause').textContent = paused ? 'Resume' : 'Pause';
+  const r = await post('/api/pause');
+  document.getElementById('pause').textContent = r.paused ? 'Resume' : 'Pause';
+  document.getElementById('reactor').classList.toggle('idle', r.paused);
 };
 document.getElementById('stop').onclick = () => post('/api/stop');
 document.getElementById('speed').onchange = e => post('/api/speed?speed=' + e.target.value);
+document.querySelectorAll('#view button').forEach(b => b.onclick = () => {
+  VIEW = b.dataset.c;
+  document.querySelectorAll('#view button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  document.getElementById('gview').textContent = NAMES[VIEW];
+  for (const p of plots) Plotly.restyle(p.div, {'line.width': C.map(lineW)});
+});
 document.getElementById('theme').onclick = () => {
   const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   r.dataset.theme = dark ? 'light' : 'dark';
-  for (const p of plots) { Plotly.restyle(p.div, {'line.color': C.map(c => css('--' + c))}); Plotly.relayout(p.div, layout(p.div.layout.title.text, p.key)); }
+  for (const p of plots) { Plotly.restyle(p.div, {'line.color': C.map(c => css('--' + c))}); Plotly.relayout(p.div, layout(p.div.layout.title.text)); }
+  buildGauges();
 };
+window.addEventListener('load', () => plots.forEach(p => Plotly.Plots.resize(p.div)));
 fetch('/api/seeds').then(r => r.json()).then(list => {
   list.forEach(s => SEEDS[s.seed] = s.hours);
   document.getElementById('seedlist').innerHTML = list.map(s => `<option value="${s.seed}">${s.class}-yield batch, ${s.hours} h</option>`).join('');

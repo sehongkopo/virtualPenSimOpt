@@ -40,11 +40,17 @@ Each browser tab runs its own comparison. `--max-runs` caps how many run at once
 comparison that no browser has watched for five minutes is stopped.
 
 The dashboard shows
-- the on-line channels that the PPO policy reads (dissolved O₂, pH, temperature, off-gas CO₂, OUR, CER, base and
-  coolant flows),
-- the sugar and PAA feeds that each controller applies, and every decision of the policy,
-- the PAA, sugar and biomass concentrations and the net penicillin yield, which are not measured on-line and are
-  shown only to compare the controllers.
+- a fermenter for the controller selected (no intervention, APC or PPO), whose broth level follows the volume and
+  whose colour follows the biomass and turns murky when PAA is toxic, with the impeller, aeration and feeds running,
+- dials for dissolved O₂, pH, PAA, sugar, biomass and penicillin, with a red blinking lamp when a variable is in a
+  range that needs action (PAA above 2,400 mg/L, sugar above 10 g/L after 20 h, biomass or penicillin falling from
+  its peak, DO below 5 mg/L, pH more than 0.25 from 6.5) and an amber lamp as it approaches,
+- plots of the operating variables (sugar, PAA and oil feeds, aeration, base and coolant flows) and of the on-line
+  observed variables (dissolved O₂, pH, temperature, off-gas CO₂, OUR, CER) for all three controllers,
+- the net yield of each controller and every decision of the PPO policy, with a progress bar for the batch.
+
+The alarm limits are display rules for this dashboard, not part of the study. PAA, sugar, biomass and penicillin
+are not measured on-line and are not available to the PPO policy.
 
 ## Use from Python
 
