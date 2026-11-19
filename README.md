@@ -51,7 +51,7 @@ The dashboard shows
   observed variables (dissolved O₂, pH, temperature, off-gas CO₂, OUR, CER) for all three controllers,
 - the net yield of each controller and every decision of the PPO policy, with a progress bar for the batch,
 - an overlay of every variable of the selected controller, each scaled to its own range, with a box to pick them,
-- with "Run a manual batch" ticked, a fourth batch of the same seed that you run by hand.
+- with "Run a manual batch" ticked, a fourth batch of the same seed that you run by hand, whose panel opens when you view it.
 
 ### Running a manual batch
 

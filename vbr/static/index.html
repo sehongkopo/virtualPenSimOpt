@@ -62,10 +62,11 @@ main { padding: 8px 20px 28px; display: grid; gap: 16px;
   grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
   grid-template-areas: "fer yld" "fer gau" "opr opr" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto auto; }
 @media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fer" "yld" "gau" "opr" "dec" "ovl" "plots"; grid-template-rows: none; } }
-/* automatic controllers only: no manual panel, button, yield or legend entry */
-main.auto { grid-template-areas: "fer yld" "fer gau" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto; }
-@media (max-width: 980px) { main.auto { grid-template-areas: "fer" "yld" "gau" "dec" "ovl" "plots"; } }
-main.auto .a-opr, main.auto .m-only { display: none; }
+/* the manual panel shows only while the manual batch is on view; with automatic controllers only,
+   its button, yield and legend entry go too */
+main.noopr { grid-template-areas: "fer yld" "fer gau" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto; }
+@media (max-width: 980px) { main.noopr { grid-template-areas: "fer" "yld" "gau" "dec" "ovl" "plots"; } }
+main.noopr .a-opr, main.auto .m-only { display: none; }
 .a-fer { grid-area: fer; } .a-yld { grid-area: yld; } .a-dec { grid-area: dec; } .a-ovl { grid-area: ovl; } .a-opr { grid-area: opr; }
 /* the dial panel stretches to the fermenter, so both boxes end on one line */
 .a-gau { grid-area: gau; display: flex; flex-direction: column; }
@@ -234,7 +235,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
   <span class="num" id="clock">0.0 h</span>
 </div>
 
-<main>
+<main class="noopr">
     <section class="panel a-fer">
       <h2>Fermenter <span class="seg" id="view">
         <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
@@ -743,10 +744,13 @@ const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 
 const SID = (() => { try { let v = sessionStorage.getItem('vbr-sid'); if (!v) { v = newId(); sessionStorage.setItem('vbr-sid', v); } return v; } catch (e) { return newId(); } })();
 async function post(path) { return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }
 
-// the manual panel shows only when a manual batch is chosen; a running batch keeps its layout
+// the manual panel shows only when a manual batch is chosen and on view; a running batch keeps its layout
+const oprLayout = () => { const m = document.querySelector('main');
+  m.classList.toggle('noopr', m.classList.contains('auto') || VIEW !== 'manual'); };
 function showManual(on) {
   document.querySelector('main').classList.toggle('auto', !on);
   if (!on && VIEW === 'manual') document.querySelector('#view button[data-c="ppo"]').click();
+  oprLayout();
 }
 document.getElementById('withOp').onchange = e => { if (!running) showManual(e.target.checked); };
 
@@ -782,7 +786,7 @@ document.getElementById('pause').onclick = () => setPaused();
 document.getElementById('stop').onclick = () => post('/api/stop');
 document.getElementById('speed').onchange = e => post('/api/speed?speed=' + e.target.value);
 document.querySelectorAll('#view button').forEach(b => b.onclick = () => {
-  VIEW = b.dataset.c;
+  VIEW = b.dataset.c; oprLayout();
   document.querySelectorAll('#view button').forEach(x => x.setAttribute('aria-pressed', x === b));
   document.getElementById('gview').textContent = NAMES[VIEW];
   document.getElementById('oview').textContent = NAMES[VIEW] + ', each line scaled to its own range so far'; ovDirty = true;
