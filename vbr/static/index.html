@@ -5,134 +5,157 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Virtual Bioreactor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
+/* High-performance HMI palette: a grey plant, colour kept for the three controllers and for alarms. */
 :root {
-  --bg: #eef1ef; --panel: #ffffff; --ink: #18211e; --muted: #5d6b66; --line: #d6dedb; --grid: #e7ecea;
-  --steel: #b9c3c0; --steel-dark: #7d8a86; --glass: #f7faf9;
-  --none: #8a948f; --apc: #c7782a; --ppo: #127a6b; --accent: #127a6b;
-  --ok: #2f8f5b; --warn: #d39b1f; --danger: #d0352b;
+  color-scheme: light;
+  --bg: #dfe2de; --panel: #eceeea; --raise: #f6f7f4; --vessel: #f3f5f2;
+  --ink: #1c2220; --muted: #59615d; --line: #b9bfba; --grid: #d3d8d3; --pipe: #6d7571; --band: #a9b0ab;
+  --none: #6f7773; --apc: #b0581e; --ppo: #11786a;
+  --warn: #d4a900; --warn-ink: #7a6200; --danger: #c8281e;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1412; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
-    --steel: #4c5754; --steel-dark: #8d9995; --glass: #1d2522;
-    --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --accent: #3fbfa8;
-    --ok: #4cbf82; --warn: #e8b84a; --danger: #f0574c;
+    color-scheme: dark;
+    --bg: #2a2f2d; --panel: #323836; --raise: #3a413e; --vessel: #3a413e;
+    --ink: #e4e8e5; --muted: #a1aaa5; --line: #4a524e; --grid: #3d4441; --pipe: #8d9692; --band: #6b7470;
+    --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac;
+    --warn: #f0c93a; --warn-ink: #f0c93a; --danger: #ff5b4f;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1412; --panel: #171e1b; --ink: #e3ebe7; --muted: #95a39d; --line: #2a3430; --grid: #222b28;
-  --steel: #4c5754; --steel-dark: #8d9995; --glass: #1d2522;
-  --none: #8f9a95; --apc: #e09a4f; --ppo: #3fbfa8; --accent: #3fbfa8;
-  --ok: #4cbf82; --warn: #e8b84a; --danger: #f0574c;
+  color-scheme: dark;
+  --bg: #2a2f2d; --panel: #323836; --raise: #3a413e; --vessel: #3a413e;
+  --ink: #e4e8e5; --muted: #a1aaa5; --line: #4a524e; --grid: #3d4441; --pipe: #8d9692; --band: #6b7470;
+  --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac;
+  --warn: #f0c93a; --warn-ink: #f0c93a; --danger: #ff5b4f;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 'IBM Plex Sans', system-ui, sans-serif; }
-header { padding: 14px 20px 8px; display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: end; justify-content: space-between; }
-h1 { font-size: 19px; margin: 0; font-weight: 600; }
-.sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; max-width: 72ch; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 'Barlow', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+/* title strip */
+header { padding: 14px 20px 10px; display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: end; justify-content: space-between; border-bottom: 1px solid var(--line); }
+h1 { font-size: 24px; line-height: 1.1; margin: 0; font-weight: 600; letter-spacing: -.01em; }
+.sub { color: var(--muted); font-size: 14px; margin-top: 4px; max-width: 74ch; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
-label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
-select, input, button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
-input[type=number] { width: 7em; font-family: 'IBM Plex Mono', monospace; }
+label { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+select, input, button { font: inherit; font-size: 14px; color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; }
+input[type=number] { width: 6.5em; }
 button { cursor: pointer; font-weight: 500; }
-button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-button:disabled { opacity: .5; cursor: default; }
-button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-/* progress */
-.progress { padding: 0 20px 10px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; font-size: 13px; color: var(--muted); }
-.track { height: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; position: relative; }
-.track .fill { height: 100%; width: 0; background: var(--accent); transition: width .25s linear; }
-.track .mark { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: .5; }
-.track .mark span { position: absolute; top: 14px; left: -10px; font-size: 10px; }
+/* batch progress */
+.progress { padding: 10px 20px 14px; display: grid; grid-template-columns: minmax(0, 18em) 1fr auto; gap: 14px; align-items: center; font-size: 14px; color: var(--muted); }
+@media (max-width: 640px) { .progress { grid-template-columns: 1fr; gap: 6px; } }
+.track { height: 10px; background: var(--raise); border: 1px solid var(--line); border-radius: 2px; position: relative; }
+.track .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ink); transition: width .25s linear; }
+.track .mark { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--line); }
+.track .mark span { position: absolute; top: 14px; transform: translateX(-50%); font-size: 11px; white-space: nowrap; }
+#clock { color: var(--ink); font-weight: 500; min-width: 9em; text-align: right; }
 
-main { padding: 0 20px 28px; display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 14px; }
+main { padding: 8px 20px 28px; display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 16px; }
 @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
-.panel h2 { font-size: 13.5px; margin: 0 0 6px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.panel h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
-.left, .right { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 12px 14px 14px; min-width: 0; }
+.panel h2 { font-size: 16px; margin: 0 0 8px; font-weight: 600; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 10px; }
+.panel h2 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.note { font-size: 13px; color: var(--muted); margin: 8px 0 0; max-width: 70ch; }
 
-/* controller view selector */
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
-.seg button { border: 0; border-radius: 0; padding: 5px 10px; font-size: 12.5px; background: var(--panel); color: var(--muted); }
+/* controller selector */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 4px 10px; font-size: 13px; background: var(--raise); color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--c); color: #fff; }
 
-/* reactor */
+/* P&ID fermenter */
 #reactor { width: 100%; height: auto; display: block; }
-.reactor-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
-.reactor-meta div { font-size: 11.5px; color: var(--muted); }
-.reactor-meta b { display: block; font: 500 15px 'IBM Plex Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+#reactor text { font-family: 'Barlow', sans-serif; fill: var(--ink); }
+#reactor .lab { fill: var(--muted); }
+#reactor .tag text { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 9.5px; fill: var(--ink); text-anchor: middle; }
+#reactor .tag circle { fill: var(--panel); stroke: var(--ink); stroke-width: 1.2; }
+#reactor .tag line { stroke: var(--ink); stroke-width: 1; }
+.pipe { fill: none; stroke: var(--pipe); stroke-width: 3; stroke-linejoin: round; }
+#dischargePipe { transition: stroke .4s; }
 .blade { transform-box: fill-box; transform-origin: center; animation: spin var(--spin, .6s) linear infinite; }
 @keyframes spin { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
-.bubble { animation: rise var(--bdur, 3s) linear infinite; opacity: .75; }
-@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: .8; } 100% { transform: translateY(var(--rise, -260px)); opacity: 0; } }
+.bubble { animation: rise var(--bdur, 3s) linear infinite; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: .85; } 100% { transform: translateY(var(--rise, -260px)); opacity: 0; } }
 .drop { animation: drip var(--ddur, 1.2s) linear infinite; }
-@keyframes drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(46px); opacity: 0; } }
+@keyframes drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(44px); opacity: 0; } }
 #broth, #surface { transition: fill .6s ease; }
 .surface { animation: wave 2.4s ease-in-out infinite alternate; }
 @keyframes wave { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
 svg.idle .blade, svg.idle .bubble, svg.idle .drop, svg.idle .surface { animation-play-state: paused; }
 svg.idle .drop, svg.idle .bubble { opacity: 0; }
 
-/* yield tiles */
-.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.tile { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; border-left: 4px solid var(--c); }
-.tile .name { font-size: 11.5px; color: var(--muted); }
-.tile .val { font: 500 20px 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+/* yields */
+.ystrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
+@media (max-width: 560px) { .ystrip { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 10px; } }
+.ystrip > div { padding: 2px 12px; border-left: 1px solid var(--line); }
+.ystrip > div:first-child { border-left: 0; padding-left: 0; }
+.ystrip dt { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.ystrip dt i { width: 14px; height: 3px; background: var(--c); display: inline-block; }
+.ystrip dd { margin: 0; font-size: 26px; font-weight: 500; line-height: 1.2; }
+.ystrip .delta dd { font-weight: 600; }
 .up { color: var(--ppo); } .down { color: var(--apc); }
 
-/* gauges */
-.gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-.gauge { border: 1px solid var(--line); border-radius: 10px; padding: 6px 6px 8px; text-align: center; position: relative; }
-.gauge svg { width: 100%; max-width: 170px; height: auto; display: block; margin: 0 auto; }
-.gauge .gname { font-size: 12.5px; font-weight: 600; }
-.gauge .gstate { font-size: 11px; color: var(--muted); min-height: 1.3em; }
-.lamp { position: absolute; top: 8px; right: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 2px var(--panel); }
-.gauge.warn .lamp { background: var(--warn); }
-.gauge.danger { border-color: var(--danger); }
-.gauge.danger .lamp { background: var(--danger); animation: blink .8s steps(1, end) infinite; box-shadow: 0 0 10px 3px var(--danger); }
+/* compass dials */
+.gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
+@media (max-width: 560px) { .gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gauge { position: relative; text-align: center; padding: 4px 4px 8px; border: 1px solid transparent; border-radius: 3px; }
+.gauge svg { width: 100%; max-width: 168px; height: auto; display: block; margin: 0 auto; }
+.gauge .gname { font-size: 14px; font-weight: 600; }
+.gauge .gstate { font-size: 13px; color: var(--muted); min-height: 1.4em; }
+.gname { display: inline-flex; align-items: center; gap: 7px; }
+.lamp { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--band); flex: none; }
+.gauge.warn .lamp { background: var(--warn); border-color: var(--warn); }
+.gauge.warn .gstate { color: var(--warn-ink); font-weight: 500; }
+.gauge.danger { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, transparent); }
+.gauge.danger .lamp { background: var(--danger); border-color: var(--danger); animation: blink .8s steps(1, end) infinite; box-shadow: 0 0 10px 3px var(--danger); }
 .gauge.danger .gstate { color: var(--danger); font-weight: 600; }
 @keyframes blink { 50% { opacity: .15; box-shadow: none; } }
+.needle, .peak { transition: transform .3s ease-out; transform-origin: 80px 78px; }
 @media (prefers-reduced-motion: reduce) {
   .gauge.danger .lamp, .blade, .bubble, .drop, .surface { animation: none; }
+  .needle, .peak, .track .fill { transition: none; }
 }
-.needle { transition: transform .3s ease-out; transform-origin: 80px 80px; }
 
-/* plots */
-.plots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 760px) { .plots { grid-template-columns: 1fr; } }
-.plots > .panel { min-width: 0; }
-.pgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 2px 8px; }
-.plot { height: 165px; width: 100%; overflow: hidden; }
-.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
-.legend i { display: inline-block; width: 14px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 5px; }
-.log { max-height: 210px; overflow: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 12px; }
-th, td { padding: 2px 5px; text-align: right; border-bottom: 1px solid var(--grid); }
+/* trends */
+.plots { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 980px) { .plots { grid-column: auto; grid-template-columns: 1fr; } }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 10px; }
+.plot { height: 172px; width: 100%; overflow: hidden; }
+.legend { display: flex; gap: 14px; font-size: 13px; font-weight: 400; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 16px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 5px; }
+
+/* decision log */
+.log { max-height: 220px; overflow: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); }
 th:first-child, td:first-child { text-align: left; }
 th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
-td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-.note { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
+tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
+.empty { color: var(--muted); font-size: 13px; padding: 6px 0; }
 </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>Virtual Bioreactor · 100,000 L penicillin fed-batch</h1>
-    <div class="sub">One IndPenSim batch runs live under three controllers. PPO reads only the on-line channels and sets ten operating variables every 6 h. APC holds the true PAA at 1,200 mg/L.</div>
+    <h1>Virtual bioreactor</h1>
+    <div class="sub">One 100,000 L penicillin fed-batch from IndPenSim runs live under three controllers. PPO reads only the on-line channels and sets ten operating variables every 6 h. APC holds the true PAA at 1,200 mg/L.</div>
   </div>
   <div class="controls">
     <label>Batch seed <input id="seed" type="number" value="847" min="0" list="seedlist"></label>
     <datalist id="seedlist"></datalist>
     <label>Speed
       <select id="speed">
-        <option value="2">2 h / s</option><option value="5">5 h / s</option>
-        <option value="10" selected>10 h / s</option><option value="0">As fast as possible</option>
+        <option value="2">2 h per second</option><option value="5">5 h per second</option>
+        <option value="10" selected>10 h per second</option><option value="0">As fast as possible</option>
       </select>
     </label>
     <button class="primary" id="start">Start batch</button>
@@ -144,107 +167,109 @@ td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums
 
 <div class="progress">
   <span id="state">Choose a seed and start a batch.</span>
-  <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="track"><div class="fill" id="prog"></div></div>
-  <span class="mono" id="clock">0.0 h · 0 %</span>
+  <div class="track" role="progressbar" aria-label="Batch progress" aria-valuemin="0" aria-valuemax="100" id="track"><div class="fill" id="prog"></div></div>
+  <span class="num" id="clock">0.0 h</span>
 </div>
 
 <main>
-  <div class="left">
+  <div class="col">
     <section class="panel">
       <h2>Fermenter <span class="seg" id="view">
         <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
         <button style="--c:var(--apc)" data-c="apc" aria-pressed="false">APC</button>
         <button style="--c:var(--ppo)" data-c="ppo" aria-pressed="true">PPO</button>
       </span></h2>
-      <svg id="reactor" class="idle" viewBox="0 0 320 470" aria-label="Fermenter of the selected controller">
+      <svg id="reactor" class="idle" viewBox="0 0 380 500" aria-label="Process diagram of the fermenter under the selected controller">
         <defs>
-          <clipPath id="inner"><rect x="72" y="78" width="176" height="326" rx="34"/></clipPath>
-          <linearGradient id="shine" x1="0" x2="1">
-            <stop offset="0" stop-color="#fff" stop-opacity=".0"/><stop offset=".18" stop-color="#fff" stop-opacity=".28"/>
-            <stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/>
-          </linearGradient>
+          <clipPath id="inner"><rect x="112" y="90" width="156" height="318" rx="40"/></clipPath>
         </defs>
-        <!-- feed lines -->
-        <g id="feedS">
-          <path d="M8 34 H110 V70" fill="none" stroke="var(--steel-dark)" stroke-width="6" stroke-linecap="round"/>
-          <text x="10" y="26" font-size="11" fill="var(--muted)">Sugar Fs</text>
-          <text x="10" y="50" font-size="11" fill="var(--ink)" class="mono" id="fsTxt">– L/h</text>
-          <circle class="drop" cx="110" cy="84" r="3.2" fill="#e8c86a"/>
-        </g>
-        <g id="feedP">
-          <path d="M312 34 H210 V70" fill="none" stroke="var(--steel-dark)" stroke-width="6" stroke-linecap="round"/>
-          <text x="310" y="26" font-size="11" fill="var(--muted)" text-anchor="end">PAA Fpaa</text>
-          <text x="310" y="50" font-size="11" fill="var(--ink)" class="mono" text-anchor="end" id="fpTxt">– L/h</text>
-          <circle class="drop" cx="210" cy="84" r="3.2" fill="#9fb7d9"/>
-        </g>
+        <!-- lines that enter the vessel are drawn first, so the vessel wall covers their ends -->
+        <path class="pipe" d="M8 30 H154 V112"/>
+        <path class="pipe" d="M8 66 H134 V112"/>
+        <path class="pipe" d="M372 30 H226 V112"/>
+        <path class="pipe" d="M246 112 V66 H372"/><path d="M362 60 L372 66 L362 72" fill="none" stroke="var(--pipe)" stroke-width="2"/>
+        <path class="pipe" id="dischargePipe" d="M190 400 V486 H372"/>
+        <rect x="126" y="392" width="6" height="62" fill="var(--pipe)"/>
+        <rect x="248" y="392" width="6" height="62" fill="var(--pipe)"/>
+        <!-- cooling jacket -->
+        <rect x="103" y="150" width="174" height="228" rx="8" fill="none" stroke="var(--pipe)" stroke-width="1.5" stroke-dasharray="5 4"/>
         <!-- motor and shaft -->
-        <rect x="146" y="6" width="28" height="30" rx="4" fill="var(--steel-dark)"/>
-        <rect x="140" y="34" width="40" height="8" rx="2" fill="var(--steel)"/>
-        <!-- jacket and vessel -->
-        <rect x="62" y="68" width="196" height="346" rx="42" fill="var(--steel)"/>
-        <rect x="72" y="78" width="176" height="326" rx="34" fill="var(--glass)"/>
+        <rect x="176" y="6" width="28" height="26" rx="2" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="190" y="23" font-size="10" text-anchor="middle" font-weight="600">M</text>
+        <rect x="172" y="32" width="36" height="6" fill="var(--pipe)"/>
+        <!-- vessel -->
+        <rect x="110" y="88" width="160" height="322" rx="42" fill="var(--vessel)" stroke="var(--ink)" stroke-width="2"/>
         <g clip-path="url(#inner)">
-          <rect id="broth" x="60" y="250" width="200" height="200" fill="#e9d9a0"/>
-          <path id="surface" class="surface" d="M50 250 Q75 244 100 250 T150 250 T200 250 T250 250 T300 250 V262 H50 Z" fill="#e9d9a0"/>
+          <rect id="broth" x="100" y="260" width="180" height="160" fill="#cfeee6"/>
+          <path id="surface" class="surface" d="M90 260 Q115 254 140 260 T190 260 T240 260 T290 260 V272 H90 Z" fill="#cfeee6"/>
           <g id="bubbles"></g>
         </g>
-        <rect x="72" y="78" width="176" height="326" rx="34" fill="url(#shine)" pointer-events="none"/>
-        <line x1="160" y1="42" x2="160" y2="380" stroke="var(--steel-dark)" stroke-width="5"/>
-        <g class="blade"><rect x="122" y="296" width="76" height="10" rx="3" fill="var(--steel-dark)"/></g>
-        <g class="blade"><rect x="122" y="196" width="76" height="10" rx="3" fill="var(--steel-dark)"/></g>
-        <!-- baffles and sparger -->
-        <rect x="80" y="120" width="5" height="250" fill="var(--steel)" opacity=".8"/>
-        <rect x="235" y="120" width="5" height="250" fill="var(--steel)" opacity=".8"/>
-        <path d="M118 384 H202" stroke="var(--steel-dark)" stroke-width="4" stroke-linecap="round"/>
-        <!-- probes -->
-        <line x1="100" y1="74" x2="104" y2="300" stroke="var(--ink)" stroke-width="3" opacity=".6"/>
-        <text x="112" y="106" font-size="10" fill="var(--muted)">DO · pH · T probe</text>
-        <!-- legs and labels -->
-        <rect x="84" y="414" width="10" height="38" fill="var(--steel-dark)"/>
-        <rect x="226" y="414" width="10" height="38" fill="var(--steel-dark)"/>
-        <rect x="70" y="450" width="180" height="6" rx="3" fill="var(--steel-dark)"/>
-        <text x="160" y="436" font-size="11" fill="var(--ink)" text-anchor="middle" class="mono" id="volTxt">– L</text>
+        <line x1="190" y1="38" x2="190" y2="372" stroke="#2f3634" stroke-width="3"/>
+        <g class="blade"><rect x="160" y="298" width="60" height="9" rx="2" fill="#2f3634"/></g>
+        <g class="blade"><rect x="160" y="212" width="60" height="9" rx="2" fill="#2f3634"/></g>
+        <rect x="124" y="132" width="4" height="226" fill="var(--pipe)"/>
+        <rect x="252" y="132" width="4" height="226" fill="var(--pipe)"/>
+        <!-- air line to the sparger -->
+        <path class="pipe" d="M8 472 H158 V388 H222"/>
+        <circle class="drop" cx="154" cy="112" r="3.4" fill="#d9b44a"/>
+        <circle class="drop" cx="134" cy="112" r="3" fill="#8a7a52"/>
+        <circle class="drop" cx="226" cy="112" r="3.4" fill="#7f9ccc"/>
+        <!-- stream labels -->
+        <text x="10" y="22" font-size="13"><tspan class="lab">Sugar</tspan> <tspan id="r-Fs" font-weight="500">–</tspan></text>
+        <text x="10" y="58" font-size="13"><tspan class="lab">Oil</tspan> <tspan id="r-Foil" font-weight="500">–</tspan></text>
+        <text x="370" y="22" font-size="13" text-anchor="end"><tspan class="lab">PAA</tspan> <tspan id="r-Fpaa" font-weight="500">–</tspan></text>
+        <text x="370" y="58" font-size="13" text-anchor="end"><tspan class="lab">Off-gas CO₂</tspan> <tspan id="r-CO2" font-weight="500">–</tspan></text>
+        <text x="10" y="464" font-size="13"><tspan class="lab">Air</tspan> <tspan id="r-Fg" font-weight="500">–</tspan></text>
+        <path id="valve" d="M290 478 L310 494 L310 478 L290 494 Z" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="370" y="472" font-size="13" text-anchor="end"><tspan class="lab">Discharge</tspan> <tspan id="r-dis" font-weight="500">closed</tspan></text>
+        <!-- instrument tags, ISA style: function letters over loop number, the bar marks a control-room display -->
+        <g class="tag"><line x1="102" y1="160" x2="110" y2="160"/><circle cx="88" cy="160" r="14"/><line x1="74" y1="160" x2="102" y2="160"/><text x="88" y="156">AI</text><text x="88" y="169">1</text></g>
+        <g class="tag"><line x1="102" y1="215" x2="110" y2="215"/><circle cx="88" cy="215" r="14"/><line x1="74" y1="215" x2="102" y2="215"/><text x="88" y="211">AI</text><text x="88" y="224">2</text></g>
+        <g class="tag"><line x1="102" y1="270" x2="110" y2="270"/><circle cx="88" cy="270" r="14"/><line x1="74" y1="270" x2="102" y2="270"/><text x="88" y="266">TI</text><text x="88" y="279">3</text></g>
+        <g class="tag"><line x1="270" y1="160" x2="278" y2="160"/><circle cx="292" cy="160" r="14"/><line x1="278" y1="160" x2="306" y2="160"/><text x="292" y="156">LI</text><text x="292" y="169">4</text></g>
+        <g class="tag"><line x1="270" y1="215" x2="278" y2="215"/><circle cx="292" cy="215" r="14"/><line x1="278" y1="215" x2="306" y2="215"/><text x="292" y="211">SI</text><text x="292" y="224">5</text></g>
+        <text x="68" y="158" font-size="13" text-anchor="end" font-weight="500" id="r-DO2">–</text><text x="68" y="172" font-size="11" text-anchor="end" class="lab">DO</text>
+        <text x="68" y="213" font-size="13" text-anchor="end" font-weight="500" id="r-pH">–</text><text x="68" y="227" font-size="11" text-anchor="end" class="lab">pH</text>
+        <text x="68" y="268" font-size="13" text-anchor="end" font-weight="500" id="r-T">–</text><text x="68" y="282" font-size="11" text-anchor="end" class="lab">Temperature</text>
+        <text x="312" y="158" font-size="13" font-weight="500" id="r-V">–</text><text x="312" y="172" font-size="11" class="lab">Volume</text>
+        <text x="312" y="213" font-size="13" font-weight="500" id="r-RPM">–</text><text x="312" y="227" font-size="11" class="lab">Agitator</text>
       </svg>
-      <div class="reactor-meta">
-        <div>Batch time<b id="mTime">–</b></div>
-        <div>Temperature<b id="mT">–</b></div>
-        <div>Off-gas CO₂<b id="mCO2">–</b></div>
-      </div>
-      <p class="note">Broth hue shows the controller (grey-brown for no intervention, amber for APC, teal for PPO). It deepens as biomass grows, turns murky when PAA is toxic and milky when sugar accumulates.</p>
+      <p class="note">Broth hue marks the controller and deepens as biomass grows. It turns murky when PAA is toxic and milky when sugar accumulates. Part of the broth is drawn off at 100 h, 130 h and then every 20 h, so the volume falls while the discharge valve is open.</p>
     </section>
 
     <section class="panel">
-      <h2>Net penicillin yield <small>kg, same batch</small></h2>
-      <div class="tiles">
-        <div class="tile" style="--c:var(--none)"><div class="name">No intervention</div><div class="val" id="y-none">–</div></div>
-        <div class="tile" style="--c:var(--apc)"><div class="name">APC</div><div class="val" id="y-apc">–</div></div>
-        <div class="tile" style="--c:var(--ppo)"><div class="name">PPO</div><div class="val" id="y-ppo">–</div></div>
-        <div class="tile" style="--c:var(--accent)"><div class="name">PPO − APC</div><div class="val" id="y-diff">–</div></div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>PPO decisions <small>multipliers on the recipe, every 6 h</small></h2>
-      <div class="log"><table><thead><tr><th>Time (h)</th><th>Fs ×</th><th>Fpaa ×</th><th>pH sp</th><th>T sp (K)</th></tr></thead><tbody id="dec"></tbody></table></div>
+      <h2>PPO decisions <small>multipliers on the recipe, newest first</small></h2>
+      <div class="log"><table><thead><tr><th>Time (h)</th><th>Sugar ×</th><th>PAA ×</th><th>pH set-point</th><th>T set-point (K)</th></tr></thead><tbody id="dec"></tbody></table>
+      <div class="empty" id="decEmpty">The first decision comes at 12 h.</div></div>
     </section>
   </div>
 
-  <div class="right">
+  <div class="col">
+    <section class="panel">
+      <h2>Net penicillin <small>kg, same batch</small></h2>
+      <dl class="ystrip">
+        <div style="--c:var(--none)"><dt><i></i>No intervention</dt><dd class="num" id="y-none">–</dd></div>
+        <div style="--c:var(--apc)"><dt><i></i>APC</dt><dd class="num" id="y-apc">–</dd></div>
+        <div style="--c:var(--ppo)"><dt><i></i>PPO</dt><dd class="num" id="y-ppo">–</dd></div>
+        <div class="delta"><dt>PPO − APC</dt><dd class="num" id="y-diff">–</dd></div>
+      </dl>
+    </section>
     <section class="panel">
       <h2>Culture state <small id="gview">PPO</small></h2>
       <div class="gauges" id="gauges"></div>
-      <p class="note">Red blinking lamp: the variable is in a range that needs action — PAA above the toxic 2,400 mg/L, sugar accumulating, biomass or penicillin falling from its peak, or DO and pH far from normal. Amber: approaching it. PAA, sugar, biomass and penicillin are not measured on-line and are not available to PPO.</p>
+      <p class="note">A red blinking lamp means the variable needs action. PAA is above the toxic 2,400 mg/L, sugar is accumulating, biomass or penicillin is falling from its peak (the small mark on the dial), or DO and pH are far from normal. A yellow lamp means it is approaching that range. PAA, sugar, biomass and penicillin are not measured on-line, so PPO never sees them.</p>
     </section>
-    <div class="plots">
-      <section class="panel">
-        <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>None</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span></span></h2>
-        <div class="pgrid" id="g-op"></div>
-      </section>
-      <section class="panel">
-        <h2>Observed variables <small>on-line</small></h2>
-        <div class="pgrid" id="g-obs"></div>
-      </section>
-    </div>
+  </div>
+
+  <div class="plots">
+    <section class="panel">
+      <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span></span></h2>
+      <div class="pgrid" id="g-op"></div>
+    </section>
+    <section class="panel">
+      <h2>Observed variables <small>on-line channels</small></h2>
+      <div class="pgrid" id="g-obs"></div>
+    </section>
   </div>
 </main>
 
@@ -254,8 +279,8 @@ const NAMES = {none: 'No intervention', apc: 'APC', ppo: 'PPO'};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let HOURS = 320, SEEDS = {}, VIEW = 'ppo';
 
-/* ── gauges ───────────────────────────────────────────────────────────── */
-// zones: [from, to, level]; alarm(v, s) can override from history (falling biomass or penicillin)
+/* ── dials ────────────────────────────────────────────────────────────── */
+// zones: [from, to, level]; peak: [warn, danger] fractional fall from the running maximum
 const GAUGES = [
   {key: 'DO2', name: 'Dissolved O₂', unit: 'mg/L', min: 0, max: 20, fmt: 1,
    zones: [[0, 5, 'danger'], [5, 8, 'warn'], [8, 20, 'ok']]},
@@ -265,10 +290,10 @@ const GAUGES = [
    zones: [[0, 2000, 'ok'], [2000, 2400, 'warn'], [2400, 5000, 'danger']]},
   {key: 'S', name: 'Sugar', unit: 'g/L', min: 0, max: 40, fmt: 2,
    zones: [[0, 5, 'ok'], [5, 10, 'warn'], [10, 40, 'danger']], after: 20},
-  {key: 'X', name: 'Biomass X', unit: 'g/L', min: 0, max: 30, fmt: 1, zones: [[0, 30, 'ok']], peak: [0.03, 0.08]},
-  {key: 'P', name: 'Penicillin P', unit: 'g/L', min: 0, max: 50, fmt: 1, zones: [[0, 50, 'ok']], peak: [0.02, 0.05]},
+  {key: 'X', name: 'Biomass', unit: 'g/L', min: 0, max: 30, fmt: 1, zones: [[0, 30, 'ok']], peak: [0.03, 0.08]},
+  {key: 'P', name: 'Penicillin', unit: 'g/L', min: 0, max: 50, fmt: 1, zones: [[0, 50, 'ok']], peak: [0.02, 0.05]},
 ];
-const A0 = -135, A1 = 135, R = 62, CX = 80, CY = 80;
+const A0 = -135, A1 = 135, R = 58, CX = 80, CY = 78;
 const ang = (g, v) => A0 + (A1 - A0) * Math.min(1, Math.max(0, (v - g.min) / (g.max - g.min)));
 const pt = (a, r) => [CX + r * Math.sin(a * Math.PI / 180), CY - r * Math.cos(a * Math.PI / 180)];
 function arc(a0, a1, r) {
@@ -280,44 +305,44 @@ function buildGauges() {
   for (const g of GAUGES) {
     const el = document.createElement('div'); el.className = 'gauge'; el.id = 'g-' + g.key;
     let ticks = '';
-    for (let i = 0; i <= 8; i++) {                       // compass-like tick ring
-      const a = A0 + (A1 - A0) * i / 8, [x0, y0] = pt(a, R - 12), [x1, y1] = pt(a, R - (i % 2 ? 16 : 20));
+    for (let i = 0; i <= 8; i++) {                                    // compass rose ticks, labelled on the even ones
+      const a = A0 + (A1 - A0) * i / 8, [x0, y0] = pt(a, R - 9), [x1, y1] = pt(a, R - (i % 2 ? 13 : 17));
       ticks += `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--muted)" stroke-width="${i % 2 ? 1 : 1.6}"/>`;
-      if (i % 2 === 0 && i > 0 && i < 8) { const [tx, ty] = pt(a, R - 30); const v = g.min + (g.max - g.min) * i / 8;
-        ticks += `<text x="${tx}" y="${ty + 3}" font-size="8.5" text-anchor="middle" fill="var(--muted)">${+v.toFixed(g.max < 10 ? 1 : 0)}</text>`; }
+      if (i % 2 === 0 && i > 0 && i < 8) { const [tx, ty] = pt(a, R - 27); const v = g.min + (g.max - g.min) * i / 8;
+        ticks += `<text x="${tx}" y="${ty + 3}" font-size="9" text-anchor="middle" fill="var(--muted)" font-family="Barlow, sans-serif">${+v.toFixed(g.max < 10 ? 1 : 0)}</text>`; }
     }
-    const zones = g.zones.map(([a, b, lv]) => `<path d="${arc(ang(g, a), ang(g, b), R)}" stroke="var(--${lv})" stroke-width="7" fill="none" opacity="${lv === 'ok' ? .45 : .85}"/>`).join('');
-    el.innerHTML = `<span class="lamp" aria-hidden="true"></span>
-      <svg viewBox="0 0 160 150" role="img" aria-label="${g.name}">
-        <circle cx="${CX}" cy="${CY}" r="${R + 8}" fill="none" stroke="var(--line)" stroke-width="1"/>
-        <path d="${arc(A0, A1, R)}" stroke="var(--grid)" stroke-width="7" fill="none"/>${zones}${ticks}
-        <text x="${CX}" y="${CY - 18}" font-size="9" text-anchor="middle" fill="var(--muted)">N</text>
+    // normal range as a grey band, alarm ranges in colour: the HMI rule that colour means abnormal
+    const zones = g.zones.map(([a, b, lv]) => `<path d="${arc(ang(g, a), ang(g, b), R)}" stroke="var(--${lv === 'ok' ? 'band' : lv})" stroke-width="${lv === 'ok' ? 6 : 6}" fill="none"/>`).join('');
+    const [px, py] = pt(0, R + 5);
+    const peak = g.peak ? `<g class="peak" id="pk-${g.key}" style="transform: rotate(${A0}deg)"><path d="M${px - 4} ${py - 5} L${px + 4} ${py - 5} L${px} ${py + 2} Z" fill="var(--ink)"/></g>` : '';
+    el.innerHTML = `<svg viewBox="0 0 160 136" role="img" aria-label="${g.name}">
+        <circle cx="${CX}" cy="${CY}" r="${R + 11}" fill="none" stroke="var(--line)" stroke-width="1"/>
+        <path d="${arc(A0, A1, R)}" stroke="var(--grid)" stroke-width="6" fill="none"/>${zones}${ticks}${peak}
         <g class="needle" id="n-${g.key}" style="transform: rotate(${A0}deg)">
-          <path d="M${CX - 4} ${CY} L${CX} ${CY - R + 4} L${CX + 4} ${CY} Z" fill="var(--ink)"/>
-          <path d="M${CX - 3} ${CY} L${CX} ${CY + 14} L${CX + 3} ${CY} Z" fill="var(--muted)"/>
+          <path d="M${CX - 3.5} ${CY} L${CX} ${CY - R + 3} L${CX + 3.5} ${CY} Z" fill="var(--ink)"/>
+          <path d="M${CX - 2.5} ${CY} L${CX} ${CY + 12} L${CX + 2.5} ${CY} Z" fill="var(--muted)"/>
         </g>
-        <circle cx="${CX}" cy="${CY}" r="5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>
-        <text x="${CX}" y="${CY + 38}" font-size="16" text-anchor="middle" fill="var(--ink)" font-family="IBM Plex Mono, monospace" id="v-${g.key}">–</text>
-        <text x="${CX}" y="${CY + 50}" font-size="9" text-anchor="middle" fill="var(--muted)">${g.unit}</text>
+        <circle cx="${CX}" cy="${CY}" r="4.5" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>
+        <text x="${CX}" y="${CY + 34}" font-size="18" font-weight="600" text-anchor="middle" fill="var(--ink)" font-family="Barlow, sans-serif" style="font-variant-numeric: tabular-nums" id="v-${g.key}">–</text>
+        <text x="${CX}" y="${CY + 47}" font-size="10" text-anchor="middle" fill="var(--muted)" font-family="Barlow, sans-serif">${g.unit}</text>
       </svg>
-      <div class="gname">${g.name}</div><div class="gstate" id="s-${g.key}">–</div>`;
+      <div class="gname"><span class="lamp" aria-hidden="true"></span>${g.name}</div><div class="gstate" id="s-${g.key}">waiting</div>`;
     box.appendChild(el);
   }
 }
 buildGauges();
-const PEAK = {};                 // running maximum per controller and variable, to detect a fall from the peak
+const PEAK = {};                 // running maximum per controller and variable
 function level(g, s, c) {
   if (g.after && s.t < g.after) return ['ok', 'normal'];
   if (g.peak) {
     const k = c + g.key; PEAK[k] = Math.max(PEAK[k] || 0, s[g.key]);
     const drop = PEAK[k] > 1 ? 1 - s[g.key] / PEAK[k] : 0;
-    if (drop > g.peak[1]) return ['danger', `falling, −${(100 * drop).toFixed(0)} % from peak`];
-    if (drop > g.peak[0]) return ['warn', `−${(100 * drop).toFixed(0)} % from peak`];
+    if (drop > g.peak[1]) return ['danger', `falling, ${(100 * drop).toFixed(0)} % below peak`];
+    if (drop > g.peak[0]) return ['warn', `${(100 * drop).toFixed(0)} % below peak`];
     return ['ok', 'normal'];
   }
   const v = s[g.key], z = g.zones.find(([a, b]) => v >= a && v < b) || (v >= g.max ? g.zones[g.zones.length - 1] : g.zones[0]);
-  const msg = {ok: 'normal', warn: 'approaching limit', danger: 'needs action'}[z[2]];
-  return [z[2], msg];
+  return [z[2], {ok: 'normal', warn: 'approaching limit', danger: 'needs action'}[z[2]]];
 }
 function updateGauges(s, c) {
   for (const g of GAUGES) {
@@ -325,7 +350,8 @@ function updateGauges(s, c) {
     document.getElementById('n-' + g.key).style.transform = `rotate(${ang(g, v)}deg)`;
     document.getElementById('v-' + g.key).textContent = v.toFixed(g.fmt);
     const [lv, msg] = level(g, s, c);
-    const el = document.getElementById('g-' + g.key); el.className = 'gauge ' + lv;
+    if (g.peak) document.getElementById('pk-' + g.key).style.transform = `rotate(${ang(g, PEAK[c + g.key])}deg)`;
+    document.getElementById('g-' + g.key).className = 'gauge ' + lv;
     document.getElementById('s-' + g.key).textContent = msg;
   }
 }
@@ -334,61 +360,67 @@ function updateGauges(s, c) {
 const bubbles = document.getElementById('bubbles');
 for (let i = 0; i < 18; i++) {
   const b = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  b.setAttribute('cx', 122 + (i * 37) % 80); b.setAttribute('cy', 380); b.setAttribute('r', 2 + (i % 3));
+  b.setAttribute('cx', 162 + (i * 37) % 58); b.setAttribute('cy', 384); b.setAttribute('r', 1.8 + (i % 3));
   b.setAttribute('fill', '#ffffff'); b.setAttribute('class', 'bubble'); b.style.animationDelay = (-i * 0.37) + 's';
   bubbles.appendChild(b);
 }
 const mix = (a, b, f) => a.map((x, i) => Math.round(x + (b[i] - x) * f));
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const rgb = a => `rgb(${a.join(',')})`;
-// broth palette per controller: [early, dense] — the hue tells the method, the depth tells the biomass
+// broth palette per controller: [early, dense]; the hue tells the method, the depth tells the biomass
 const BROTH = {none: ['#e6e1cf', '#8c7a5c'], apc: ['#f4dcb4', '#c46a1c'], ppo: ['#cfeee6', '#17806f']};
 function brothColour(s, c) {
-  const fx = Math.min(1, Math.max(0, s.X / 25));                       // pale → deep with biomass
-  let col = mix(hex(BROTH[c][0]), hex(BROTH[c][1]), fx);
-  const tox = Math.min(1, Math.max(0, (s.PAA - 2000) / 2500));         // murky olive when PAA is toxic
-  col = mix(col, hex('#6b6a43'), 0.75 * tox);
-  const sug = Math.min(1, Math.max(0, (s.S - 5) / 30));                // milky when sugar accumulates
-  return rgb(mix(col, hex('#d9d4c4'), 0.35 * sug));
+  let col = mix(hex(BROTH[c][0]), hex(BROTH[c][1]), Math.min(1, Math.max(0, s.X / 25)));
+  col = mix(col, hex('#6b6a43'), 0.75 * Math.min(1, Math.max(0, (s.PAA - 2000) / 2500)));   // murky when PAA is toxic
+  return rgb(mix(col, hex('#d9d4c4'), 0.35 * Math.min(1, Math.max(0, (s.S - 5) / 30))));     // milky when sugar accumulates
 }
-function updateReactor(s) {
-  const top = 404 - 326 * Math.min(1, s.V / 105000);                   // vessel inner height ~ 105 m³
-  document.getElementById('broth').setAttribute('y', top); document.getElementById('broth').setAttribute('height', 420 - top);
-  const surf = document.getElementById('surface');
-  surf.setAttribute('d', `M50 ${top} Q75 ${top - 6} 100 ${top} T150 ${top} T200 ${top} T250 ${top} T300 ${top} V${top + 12} H50 Z`);
-  const col = brothColour(s, VIEW); document.getElementById('broth').setAttribute('fill', col); surf.setAttribute('fill', col);
-  document.getElementById('reactor').style.setProperty('--rise', `${top - 378}px`);
-  document.getElementById('reactor').style.setProperty('--bdur', `${Math.max(1.2, 4 - (s.Fg || 0) / 40)}s`);
-  document.getElementById('reactor').style.setProperty('--spin', `${60 / Math.max(30, (s.RPM || 100)) * 0.5}s`);
-  const fs = document.querySelector('#feedS .drop'), fp = document.querySelector('#feedP .drop');
-  fs.style.setProperty('--ddur', `${Math.max(0.4, 3 - s.Fs / 60)}s`); fs.style.display = s.Fs > 0.5 ? '' : 'none';
-  fp.style.setProperty('--ddur', `${Math.max(0.5, 3 - s.Fpaa / 5)}s`); fp.style.display = s.Fpaa > 0.05 ? '' : 'none';
-  document.getElementById('fsTxt').textContent = s.Fs.toFixed(1) + ' L/h';
-  document.getElementById('fpTxt').textContent = s.Fpaa.toFixed(2) + ' L/h';
-  document.getElementById('volTxt').textContent = Math.round(s.V).toLocaleString('en-US') + ' L';
-  document.getElementById('mTime').textContent = s.t.toFixed(1) + ' h';
-  document.getElementById('mT').textContent = (s.T - 273.15).toFixed(2) + ' °C';
-  document.getElementById('mCO2').textContent = s.CO2.toFixed(2) + ' %';
+const PREV_V = {};
+const setT = (id, v) => { document.getElementById(id).textContent = v; };
+const f = (v, d, u = '') => v == null || isNaN(v) ? '–' : v.toFixed(d) + u;      // a missing channel shows a dash
+function updateReactor(s, c) {
+  const top = 408 - 318 * Math.min(1, s.V / 105000);                   // inner height ~ 105 m³
+  const broth = document.getElementById('broth'), surf = document.getElementById('surface');
+  broth.setAttribute('y', top); broth.setAttribute('height', 420 - top);
+  surf.setAttribute('d', `M90 ${top} Q115 ${top - 6} 140 ${top} T190 ${top} T240 ${top} T290 ${top} V${top + 12} H90 Z`);
+  const col = brothColour(s, c); broth.setAttribute('fill', col); surf.setAttribute('fill', col);
+  const r = document.getElementById('reactor');
+  r.style.setProperty('--rise', `${top - 380}px`);
+  r.style.setProperty('--bdur', `${Math.max(1.2, 4 - (s.Fg || 0) / 40)}s`);
+  r.style.setProperty('--spin', `${60 / Math.max(30, (s.RPM || 100)) * 0.5}s`);
+  const [ds, doil, dp] = r.querySelectorAll('.drop'); s = {Foil: 0, ...s};
+  ds.style.setProperty('--ddur', `${Math.max(0.4, 3 - s.Fs / 60)}s`); ds.style.display = s.Fs > 0.5 ? '' : 'none';
+  doil.style.setProperty('--ddur', `${Math.max(0.5, 3 - s.Foil / 10)}s`); doil.style.display = s.Foil > 0.5 ? '' : 'none';
+  dp.style.setProperty('--ddur', `${Math.max(0.5, 3 - s.Fpaa / 5)}s`); dp.style.display = s.Fpaa > 0.05 ? '' : 'none';
+  // valve open while broth is drawn off; without the Fremoved channel, a falling volume marks it
+  const open = s.Fremoved != null ? s.Fremoved > 1 : PREV_V[c] !== undefined && s.V - PREV_V[c] < -200; PREV_V[c] = s.V;
+  document.getElementById('dischargePipe').style.stroke = open ? col : '';
+  document.getElementById('valve').setAttribute('fill', open ? col : 'var(--panel)');
+  setT('r-dis', open ? 'open' : 'closed');
+  setT('r-Fs', f(s.Fs, 1, ' L/h')); setT('r-Foil', f(s.Foil, 1, ' L/h')); setT('r-Fpaa', f(s.Fpaa, 2, ' L/h'));
+  setT('r-CO2', f(s.CO2, 2, ' %')); setT('r-Fg', f(s.Fg, 1, ' m³/min'));
+  setT('r-DO2', f(s.DO2, 1, ' mg/L')); setT('r-pH', f(s.pH, 2)); setT('r-T', f(s.T - 273.15, 1, ' °C'));
+  setT('r-V', Math.round(s.V).toLocaleString('en-US') + ' L'); setT('r-RPM', f(s.RPM, 0, ' rpm'));
 }
 
-/* ── plots ────────────────────────────────────────────────────────────── */
+/* ── trends ───────────────────────────────────────────────────────────── */
 const PANELS = {
-  'g-op': [['Fs', 'Sugar feed Fs (L/h)'], ['Fpaa', 'PAA feed Fpaa (L/h)'], ['Foil', 'Oil feed Foil (L/h)'],
-           ['Fg', 'Aeration Fg (m³/min)'], ['Fb', 'Base flow Fb (L/h)'], ['Fc', 'Coolant flow Fc (L/h)']],
+  'g-op': [['Fs', 'Sugar feed (L/h)'], ['Fpaa', 'PAA feed (L/h)'], ['Foil', 'Oil feed (L/h)'],
+           ['Fg', 'Aeration (m³/min)'], ['Fb', 'Base flow (L/h)'], ['Fc', 'Coolant flow (L/h)']],
   'g-obs': [['DO2', 'Dissolved O₂ (mg/L)'], ['pH', 'pH'], ['T', 'Temperature (K)'],
-            ['CO2', 'Off-gas CO₂ (%)'], ['OUR', 'OUR'], ['CER', 'CER']],
+            ['CO2', 'Off-gas CO₂ (%)'], ['OUR', 'Oxygen uptake rate'], ['CER', 'CO₂ evolution rate']],
 };
 const plots = [];
 function layout(title) {
   return {
-    title: {text: title, font: {size: 11.5, color: css('--ink')}, x: 0.02, y: 0.96},
-    margin: {l: 46, r: 6, t: 24, b: 26}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-    font: {family: 'IBM Plex Sans, sans-serif', size: 10, color: css('--muted')},
-    xaxis: {gridcolor: css('--grid'), zeroline: false, range: [0, HOURS], ticksuffix: ' h'},
-    yaxis: {gridcolor: css('--grid'), zeroline: false}, showlegend: false, autosize: true,
+    title: {text: title, font: {size: 13, color: css('--ink'), family: 'Barlow, sans-serif'}, x: 0.02, y: 0.96},
+    margin: {l: 46, r: 8, t: 26, b: 26}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {family: 'Barlow, sans-serif', size: 11, color: css('--muted')},
+    xaxis: {gridcolor: css('--grid'), linecolor: css('--line'), zeroline: false, range: [0, HOURS], ticksuffix: ' h'},
+    yaxis: {gridcolor: css('--grid'), linecolor: css('--line'), zeroline: false}, showlegend: false, autosize: true,
+    hoverlabel: {font: {family: 'Barlow, sans-serif'}},
   };
 }
-const lineW = c => c === VIEW ? 2.2 : 1.1;
+const lineW = c => c === VIEW ? 2.4 : 1.1;
 function build() {
   plots.length = 0;
   for (const [gid, items] of Object.entries(PANELS)) {
@@ -396,11 +428,17 @@ function build() {
     for (const [key, title] of items) {
       const div = document.createElement('div'); div.className = 'plot'; g.appendChild(div);
       const traces = C.map(c => ({x: [], y: [], mode: 'lines', line: {color: css('--' + c), width: lineW(c)}, name: NAMES[c],
-                                  hovertemplate: '%{x:.1f} h · %{y:.4g}<extra>' + NAMES[c] + '</extra>'}));
+                                  hovertemplate: '%{x:.1f} h, %{y:.4g}<extra>' + NAMES[c] + '</extra>'}));
       Plotly.newPlot(div, traces, layout(title), {displayModeBar: false, responsive: true});
       plots.push({div, key});
       new ResizeObserver(() => Plotly.Plots.resize(div)).observe(div);
     }
+  }
+  const track = document.getElementById('track');
+  track.querySelectorAll('.mark').forEach(m => m.remove());
+  for (let h = 50; h < HOURS; h += 50) {
+    const m = document.createElement('div'); m.className = 'mark'; m.style.left = (100 * h / HOURS) + '%';
+    m.innerHTML = `<span>${h} h</span>`; track.appendChild(m);
   }
 }
 build();
@@ -418,12 +456,12 @@ function draw() {
   for (const c of C) if (last[c]) document.getElementById('y-' + c).textContent = fmt(last[c].yield);
   if (last.apc && last.ppo) {
     const d = last.ppo.yield - last.apc.yield, el = document.getElementById('y-diff');
-    el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)); el.className = 'val ' + (d >= 0 ? 'up' : 'down');
+    el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)); el.className = 'num ' + (d >= 0 ? 'up' : 'down');
   }
   const s = last[VIEW];
-  if (s && s.DO2 !== undefined) { updateReactor(s); updateGauges(s, VIEW); }
+  if (s && s.DO2 !== undefined) { updateReactor(s, VIEW); updateGauges(s, VIEW); }
   const t = Math.min(...C.map(c => last[c] && last[c].t !== undefined ? last[c].t : 0)), pc = Math.min(100, 100 * t / (N * 0.2));
-  document.getElementById('clock').textContent = `${t.toFixed(1)} h · ${pc.toFixed(0)} %`;
+  document.getElementById('clock').textContent = `${t.toFixed(1)} h of ${(N * 0.2).toFixed(0)} h`;
   document.getElementById('prog').style.width = pc + '%'; document.getElementById('track').setAttribute('aria-valuenow', pc.toFixed(0));
 }
 function flush() { draw(); requestAnimationFrame(flush); }
@@ -441,11 +479,15 @@ function handle(list, seed) {
     else if (ev.type === 'decision') {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${ev.t.toFixed(0)}</td><td>${ev.Fs.toFixed(4)}</td><td>${ev.Fpaa.toFixed(4)}</td><td>${ev.pH_sp.toFixed(3)}</td><td>${ev.T_sp.toFixed(2)}</td>`;
-      document.getElementById('dec').prepend(tr);
+      document.getElementById('dec').prepend(tr); document.getElementById('decEmpty').hidden = true;
     }
     else if (ev.type === 'done') { last[ev.c] = {...(last[ev.c] || {}), yield: ev.yield}; }
-    else if (ev.type === 'error') document.getElementById('state').textContent = `${NAMES[ev.c]} failed: ${ev.message}`;
-    else if (ev.type === 'finished') { document.getElementById('state').textContent = `Batch ${seed} finished`; setRunning(false); if (es) es.close(); }
+    else if (ev.type === 'stopped') document.getElementById('state').textContent = `Batch ${seed} stopped`;
+    else if (ev.type === 'error') document.getElementById('state').textContent = `${NAMES[ev.c]} batch failed. ${ev.message}`;
+    else if (ev.type === 'finished') {
+      if (!/stopped|failed/.test(document.getElementById('state').textContent)) document.getElementById('state').textContent = `Batch ${seed} finished`;
+      setRunning(false); if (es) es.close();
+    }
   }
 }
 // crypto.randomUUID needs HTTPS or localhost, so build the id from getRandomValues, which works over plain HTTP too
@@ -459,11 +501,12 @@ document.getElementById('start').onclick = async () => {
   HOURS = SEEDS[seed] ? Math.ceil(SEEDS[seed] / 10) * 10 : 320;
   build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1;
   for (const k in PEAK) delete PEAK[k];
-  document.getElementById('dec').innerHTML = '';
+  for (const k in PREV_V) delete PREV_V[k];
+  document.getElementById('dec').innerHTML = ''; document.getElementById('decEmpty').hidden = false;
   for (const c of C) document.getElementById('y-' + c).textContent = '–';
   document.getElementById('y-diff').textContent = '–';
   const r = await post(`/api/start?seed=${seed}&speed=${speed}`);
-  if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started.'; return; }
+  if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started. Check the seed and try again.'; return; }
   document.getElementById('state').textContent = `Running batch ${seed}`;
   setRunning(true);
   es = new EventSource('/api/stream?sid=' + SID);
