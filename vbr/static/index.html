@@ -812,7 +812,9 @@ const Replay = (() => {
 })();
 if (STATIC) {
   const w = document.getElementById('withOp'); w.checked = false; w.closest('label').style.display = 'none';
-  document.querySelector('header .sub').textContent += ' The batches were computed in advance and are replayed in your browser.';
+  document.querySelector('header .sub').textContent = 'One 100,000 L penicillin fed-batch from IndPenSim is replayed under three controllers. '
+    + 'PPO reads only the on-line channels and sets ten operating variables every 6 h. APC holds the true PAA at 1,200 mg/L. '
+    + 'The 200 evaluation batches of the study were computed in advance and play in your browser.';
 }
 async function post(path) { if (STATIC) return Replay.api(path);
   return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }

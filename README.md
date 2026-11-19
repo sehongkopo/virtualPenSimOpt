@@ -11,6 +11,10 @@ measurements alone* (Hong, submitted; preprint https://doi.org/10.26434/chemrxiv
 | PPO | the sixteen on-line channels only | ten operating variables every 6 h from 12 h |
 | Manual (optional) | the person at the dashboard | feeds, aeration and agitation as multipliers on the recipe, and the pH and temperature set-points, at any time |
 
+The 200 evaluation batches can be watched without installing anything at
+https://sehongkopo.github.io/virtualPenSimOpt/, where they are replayed from stored results. Other seeds and the
+manual batch need the Python server below.
+
 Every batch is integrated by [pyIndPenSim](https://github.com/sehongkopo/pyIndPenSim) with the BDF solver at the
 tolerances of the study (relative 10⁻⁶, absolute 10⁻⁸). A batch is fixed by its seed, so the three controllers
 meet the same initial conditions, strain parameters, disturbances and batch length. The dashboard streams every
