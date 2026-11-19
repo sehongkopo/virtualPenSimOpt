@@ -120,9 +120,9 @@ svg.idle .drop, svg.idle .bubble { opacity: 0; }
 .gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
 @media (max-width: 560px) { .gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .gauge { position: relative; text-align: center; padding: 4px 4px 8px; border: 1px solid transparent; border-radius: 3px; }
-.gauge svg { width: 100%; max-width: 168px; height: auto; display: block; margin: 0 auto; }
-.gauge .gname { font-size: 14px; font-weight: 600; }
-.gauge .gstate { font-size: 13px; color: var(--muted); min-height: 1.4em; }
+.gauge svg { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; }
+.gauge .gname { font-size: 15px; font-weight: 600; }
+.gauge .gstate { font-size: 14px; color: var(--muted); min-height: 1.4em; }
 .gname { display: inline-flex; align-items: center; gap: 7px; }
 .lamp { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--band); flex: none; }
 .gauge.warn .lamp { background: var(--warn); border-color: var(--warn); }
