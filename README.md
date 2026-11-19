@@ -76,6 +76,18 @@ dashboard, not a result of the study.
 The alarm limits are display rules for this dashboard, not part of the study. PAA, sugar, biomass and penicillin
 are not measured on-line and are not available to the PPO policy.
 
+### Static replay site
+
+The dashboard can also be published as static files, for GitHub Pages or any web server, with no Python process
+behind it. The 200 evaluation batches are computed in advance under the three controllers, and the page replays
+them in the browser at the chosen speed. Batches outside these 200 seeds and the manual batch need the Python
+server.
+
+```bash
+python tools/build_site.py --workers 32     # writes site/ (about 35 MB), a few minutes on 32 cores
+python -m http.server -d site 8070          # to look at it locally
+```
+
 ## Use from Python
 
 ```python
@@ -117,6 +129,7 @@ while the means agree.
 | `vbr/models/ppo_obs16_s{0,1,2}.npz` | weights of the PPO policies of seeds 0–2 |
 | `vbr/server.py`, `vbr/static/index.html` | the local web dashboard (Python standard library and Plotly) |
 | `validate.py` | comparison with the yields of the study |
+| `tools/build_site.py` | the static replay site of the 200 evaluation batches |
 
 ## Licence
 

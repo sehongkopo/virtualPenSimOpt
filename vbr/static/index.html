@@ -742,7 +742,80 @@ function handle(list, seed) {
 // crypto.randomUUID needs HTTPS or localhost, so build the id from getRandomValues, which works over plain HTTP too
 const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 const SID = (() => { try { let v = sessionStorage.getItem('vbr-sid'); if (!v) { v = newId(); sessionStorage.setItem('vbr-sid', v); } return v; } catch (e) { return newId(); } })();
-async function post(path) { return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }
+
+/* ── replay of stored batches, for the static site (no Python server) ──────────────
+   tools/build_site.py stores every step of the 200 evaluation batches under the three controllers.
+   Replay answers the same calls as the server and streams the same events, at the chosen speed. */
+const STATIC = !!window.VBR_STATIC;
+const Replay = (() => {
+  const CS = ['none', 'apc', 'ppo'];
+  let D = null, sink = null, timer = null, tNow = 0, wall = 0, speed = 10, held = false, pos = {}, dpos = {}, over = {};
+  async function load(seed) {
+    const [h, b] = await Promise.all([fetch(`data/${seed}.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+                                      fetch(`data/${seed}.bin`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]);
+    if (!h || !b) return null;
+    let off = 0;
+    for (const c of CS) {
+      const m = h.ctrls[c], n = m.n;
+      m.k = new Uint16Array(b, off, n); off += 2 * n;
+      m.cols = h.vars.map(() => { const q = new Uint16Array(b, off, n); off += 2 * n; return q; });
+    }
+    return h;
+  }
+  function step(c, i) {
+    const m = D.ctrls[c], k = m.k[i], ev = {type: 'step', c, t: Math.round((k - 1) * 2) / 10, k, N: m.N};
+    D.vars.forEach((v, j) => ev[v] = m.lo[j] + m.cols[j][i] / 65535 * (m.hi[j] - m.lo[j]));
+    if (i === m.n - 1) ev.yield = m.yield;
+    return ev;
+  }
+  function tick() {
+    const now = performance.now(), dt = (now - wall) / 1000; wall = now;
+    if (held || !D) return;
+    tNow += dt * (speed > 0 ? speed : 60);
+    const out = [];
+    for (const c of CS) {
+      const m = D.ctrls[c];
+      while (dpos[c] < m.decisions.length && m.decisions[dpos[c]].t <= tNow) out.push({type: 'decision', c, ...m.decisions[dpos[c]++]});
+      while (pos[c] < m.n && (m.k[pos[c]] - 1) * 0.2 <= tNow + 1e-9) out.push(step(c, pos[c]++));
+      if (pos[c] === m.n && !over[c]) { over[c] = true; out.push({type: 'done', c, yield: m.yield}); }
+    }
+    if (CS.every(c => over[c])) { out.push({type: 'finished'}); clearInterval(timer); timer = null; }
+    if (out.length && sink) sink(out);
+  }
+  async function api(path) {
+    const u = new URL(path, location.href), q = Object.fromEntries(u.searchParams);
+    if (u.pathname.endsWith('/api/start')) {
+      if (timer) { clearInterval(timer); timer = null; }
+      const seed = parseInt(q.seed, 10);
+      D = Number.isInteger(seed) && SEEDS[seed] ? await load(seed) : null;
+      if (!D) return {ok: false, message: `Batch ${q.seed} is not stored on this site. Pick one of the 200 batches in the seed list.`};
+      speed = +q.speed; held = false; tNow = 0; pos = {}; dpos = {}; over = {};
+      for (const c of CS) { pos[c] = 0; dpos[c] = 0; }
+      return {ok: true};
+    }
+    if (u.pathname.endsWith('/api/pause')) { held = q.on === undefined ? !held : q.on === '1'; return {paused: held}; }
+    if (u.pathname.endsWith('/api/speed')) { speed = +q.speed; return {ok: true}; }
+    if (u.pathname.endsWith('/api/stop')) {
+      if (timer && sink) { clearInterval(timer); timer = null;
+        sink([...CS.filter(c => !over[c]).map(c => ({type: 'stopped', c})), {type: 'finished'}]); }
+      return {ok: true};
+    }
+    return {ok: false};
+  }
+  function stream(cb) {
+    sink = cb; wall = performance.now();
+    cb([{type: 'start', seed: D.seed, controllers: CS}]);
+    timer = setInterval(tick, 50);
+    return {close() { if (timer) clearInterval(timer); timer = null; sink = null; }};
+  }
+  return {api, stream};
+})();
+if (STATIC) {
+  const w = document.getElementById('withOp'); w.checked = false; w.closest('label').style.display = 'none';
+  document.querySelector('header .sub').textContent += ' The batches were computed in advance and are replayed in your browser.';
+}
+async function post(path) { if (STATIC) return Replay.api(path);
+  return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }
 
 // the manual panel shows only when a manual batch is chosen and on view; a running batch keeps its layout
 const oprLayout = () => { const m = document.querySelector('main');
@@ -766,13 +839,14 @@ document.getElementById('start').onclick = async () => {
   document.getElementById('dec').innerHTML = ''; document.getElementById('decEmpty').hidden = false;
   for (const c of C) document.getElementById('y-' + c).textContent = '–';
   for (const c of ['ppo', 'manual']) document.getElementById('d-' + c).textContent = '';
-  opOn = document.getElementById('withOp').checked; showManual(opOn);
+  opOn = !STATIC && document.getElementById('withOp').checked; showManual(opOn);
   const r = await post(`/api/start?seed=${seed}&speed=${speed}&manual=${opOn ? 1 : 0}`);
   if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started. Check the seed and try again.'; return; }
   document.getElementById('state').textContent = `Running batch ${seed}`;
   setRunning(true); paused = false;
   if (opOn) await sendOp();                        // settings chosen before the start apply from the first step
   document.getElementById('opState').textContent = opOn ? `You run a fourth, manual batch of seed ${seed}.` : 'Only the three controllers run this time.';
+  if (STATIC) { es = Replay.stream(list => handle(list, seed)); return; }
   es = new EventSource('/api/stream?sid=' + SID);
   es.onmessage = e => handle(JSON.parse(e.data), seed);
 };
@@ -799,7 +873,7 @@ document.getElementById('theme').onclick = () => {
   buildGauges(); ovDirty = true;
 };
 window.addEventListener('load', () => plots.forEach(p => Plotly.Plots.resize(p.div)));
-fetch('/api/seeds').then(r => r.json()).then(list => {
+fetch(STATIC ? 'data/seeds.json' : '/api/seeds').then(r => r.json()).then(list => {
   list.forEach(s => SEEDS[s.seed] = s.hours);
   document.getElementById('seedlist').innerHTML = list.map(s => `<option value="${s.seed}">${s.class}-yield batch, ${s.hours} h</option>`).join('');
 });
