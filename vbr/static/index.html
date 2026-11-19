@@ -58,9 +58,15 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .track .mark span { position: absolute; top: 14px; transform: translateX(-50%); font-size: 11px; white-space: nowrap; }
 #clock { color: var(--ink); font-weight: 500; min-width: 9em; text-align: right; }
 
-main { padding: 8px 20px 28px; display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 16px; }
-@media (max-width: 980px) { main { grid-template-columns: 1fr; } }
-.col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+main { padding: 8px 20px 28px; display: grid; gap: 16px;
+  grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
+  grid-template-areas: "fer yld" "fer gau" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto; }
+@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fer" "yld" "gau" "dec" "ovl" "plots"; grid-template-rows: none; } }
+.a-fer { grid-area: fer; } .a-yld { grid-area: yld; } .a-dec { grid-area: dec; } .a-ovl { grid-area: ovl; }
+/* the dial panel stretches to the fermenter, so both boxes end on one line */
+.a-gau { grid-area: gau; display: flex; flex-direction: column; }
+.a-gau .gauges { flex: 1; align-content: space-evenly; }
+.a-gau .note { margin-top: 10px; }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 12px 14px 14px; min-width: 0; }
 .panel h2 { font-size: 16px; margin: 0 0 8px; font-weight: 600; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 10px; }
 .panel h2 small { font-weight: 400; color: var(--muted); font-size: 13px; }
@@ -126,19 +132,33 @@ svg.idle .drop, svg.idle .bubble { opacity: 0; }
 }
 
 /* trends */
-.plots { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 980px) { .plots { grid-column: auto; grid-template-columns: 1fr; } }
+.plots { grid-area: plots; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-width: 0; }
+@media (max-width: 980px) { .plots { grid-template-columns: minmax(0, 1fr); } }
+
+/* all variables, overlaid */
+.picker { display: grid; gap: 4px; margin-bottom: 6px; }
+.pgroup { display: grid; grid-template-columns: 10.5em minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
+@media (max-width: 640px) { .pgroup { grid-template-columns: minmax(0, 1fr); } }
+.pgroup > span { font-size: 13px; color: var(--muted); }
+.pgroup > div { display: flex; flex-wrap: wrap; gap: 2px 14px; }
+.picker label { flex-direction: row; align-items: center; gap: 6px; color: var(--ink); font-size: 13.5px; cursor: pointer; }
+.picker input { accent-color: var(--ink); margin: 0; }
+.picker label i { width: 18px; height: 0; border-top: 2.5px var(--dash, solid) var(--c); display: inline-block; }
+.picker .acts { display: flex; gap: 6px; justify-content: flex-end; }
+.picker .acts button { font-size: 13px; padding: 2px 10px; }
+.oplot { height: 330px; width: 100%; overflow: hidden; }
 .pgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 10px; }
 .plot { height: 172px; width: 100%; overflow: hidden; }
 .legend { display: flex; gap: 14px; font-size: 13px; font-weight: 400; color: var(--muted); flex-wrap: wrap; }
 .legend i { display: inline-block; width: 16px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 5px; }
 
 /* decision log */
-.log { max-height: 220px; overflow: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.a-dec { display: flex; flex-direction: column; }
+.log { flex: 1 1 0; min-height: 220px; overflow: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13.5px; }
 th, td { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--grid); }
 th:first-child, td:first-child { text-align: left; }
-th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+th { color: var(--muted); font-weight: 500; position: sticky; top: 0; z-index: 1; background: var(--panel); }
 tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
 .empty { color: var(--muted); font-size: 13px; padding: 6px 0; }
 </style>
@@ -172,8 +192,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
 </div>
 
 <main>
-  <div class="col">
-    <section class="panel">
+    <section class="panel a-fer">
       <h2>Fermenter <span class="seg" id="view">
         <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
         <button style="--c:var(--apc)" data-c="apc" aria-pressed="false">APC</button>
@@ -237,15 +256,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
       <p class="note">Broth hue marks the controller and deepens as biomass grows. It turns murky when PAA is toxic and milky when sugar accumulates. Part of the broth is drawn off at 100 h, 130 h and then every 20 h, so the volume falls while the discharge valve is open.</p>
     </section>
 
-    <section class="panel">
-      <h2>PPO decisions <small>multipliers on the recipe, newest first</small></h2>
-      <div class="log"><table><thead><tr><th>Time (h)</th><th>Sugar ×</th><th>PAA ×</th><th>pH set-point</th><th>T set-point (K)</th></tr></thead><tbody id="dec"></tbody></table>
-      <div class="empty" id="decEmpty">The first decision comes at 12 h.</div></div>
-    </section>
-  </div>
-
-  <div class="col">
-    <section class="panel">
+    <section class="panel a-yld">
       <h2>Net penicillin <small>kg, same batch</small></h2>
       <dl class="ystrip">
         <div style="--c:var(--none)"><dt><i></i>No intervention</dt><dd class="num" id="y-none">–</dd></div>
@@ -254,12 +265,23 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <div class="delta"><dt>PPO − APC</dt><dd class="num" id="y-diff">–</dd></div>
       </dl>
     </section>
-    <section class="panel">
+    <section class="panel a-gau">
       <h2>Culture state <small id="gview">PPO</small></h2>
       <div class="gauges" id="gauges"></div>
       <p class="note">A red blinking lamp means the variable needs action. PAA is above the toxic 2,400 mg/L, sugar is accumulating, biomass or penicillin is falling from its peak (the small mark on the dial), or DO and pH are far from normal. A yellow lamp means it is approaching that range. PAA, sugar, biomass and penicillin are not measured on-line, so PPO never sees them.</p>
     </section>
-  </div>
+
+    <section class="panel a-dec">
+      <h2>PPO decisions <small>multipliers on the recipe, newest first</small></h2>
+      <div class="log"><table><thead><tr><th>Time (h)</th><th>Sugar ×</th><th>PAA ×</th><th>pH set-point</th><th>T set-point (K)</th></tr></thead><tbody id="dec"></tbody></table>
+      <div class="empty" id="decEmpty">The first decision comes at 12 h.</div></div>
+    </section>
+
+    <section class="panel a-ovl">
+      <h2>All variables <small id="oview">PPO, each line scaled to its own range so far</small></h2>
+      <div class="picker" id="picker"></div>
+      <div class="oplot" id="overlay"></div>
+    </section>
 
   <div class="plots">
     <section class="panel">
@@ -443,6 +465,52 @@ function build() {
 }
 build();
 
+/* ── all variables, overlaid ──────────────────────────────────────────── */
+const GROUPS = {op: ['Operating', 'dot'], on: ['Measured on-line', 'solid'], off: ['Not measured on-line', 'dash']};
+const VARS = [
+  ['Fs', 'Sugar feed', 'L/h', 'op'], ['Fpaa', 'PAA feed', 'L/h', 'op'], ['Foil', 'Oil feed', 'L/h', 'op'], ['Fg', 'Aeration', 'm³/min', 'op'],
+  ['Fb', 'Base flow', 'L/h', 'op'], ['Fc', 'Coolant flow', 'L/h', 'op'], ['RPM', 'Agitator', 'rpm', 'op'], ['Fremoved', 'Discharge', 'L/h', 'op'],
+  ['DO2', 'Dissolved O₂', 'mg/L', 'on'], ['pH', 'pH', '', 'on'], ['T', 'Temperature', 'K', 'on'], ['CO2', 'Off-gas CO₂', '%', 'on'],
+  ['OUR', 'Oxygen uptake rate', '', 'on'], ['CER', 'CO₂ evolution rate', '', 'on'], ['V', 'Volume', 'L', 'on'],
+  ['PAA', 'PAA', 'mg/L', 'off'], ['S', 'Sugar', 'g/L', 'off'], ['X', 'Biomass', 'g/L', 'off'], ['P', 'Penicillin', 'g/L', 'off'],
+].map(([key, name, unit, grp]) => ({key, name, unit, grp}));
+// one colour per variable across the groups (it repeats only beyond twelve); the dash tells the group
+const PAL = ['#2f6db5', '#c0392b', '#2e8b57', '#8e44ad', '#c98a00', '#138d90', '#7a5a48', '#c2185b', '#e67e22', '#e84393', '#7cb342', '#5dade2'];
+VARS.forEach((v, i) => { v.col = PAL[i % PAL.length]; v.dash = GROUPS[v.grp][1]; });
+const SEL = new Set((() => { try { return JSON.parse(localStorage.getItem('vbr-sel')) || null; } catch (e) { return null; } })()
+                    || ['Fs', 'DO2', 'pH', 'PAA', 'S', 'X', 'P']);
+const saveSel = () => { try { localStorage.setItem('vbr-sel', JSON.stringify([...SEL])); } catch (e) {} };
+const newHist = () => Object.fromEntries(C.map(c => [c, Object.fromEntries([['t', []], ...VARS.map(v => [v.key, []])])]));
+let HIST = newHist(), ovDirty = true, ovLast = 0;
+function buildPicker() {
+  const box = document.getElementById('picker');
+  box.innerHTML = Object.entries(GROUPS).map(([g, [label]]) => `<div class="pgroup"><span>${label}</span><div>` +
+    VARS.filter(v => v.grp === g).map(v => `<label style="--c:${v.col};--dash:${v.dash === 'dot' ? 'dotted' : v.dash === 'dash' ? 'dashed' : 'solid'}">` +
+      `<input type="checkbox" value="${v.key}" ${SEL.has(v.key) ? 'checked' : ''}><i></i>${v.name}</label>`).join('') + '</div></div>').join('') +
+    '<div class="acts"><button type="button" data-all="1">Select all</button><button type="button" data-all="0">Clear</button></div>';
+  box.onchange = e => { e.target.checked ? SEL.add(e.target.value) : SEL.delete(e.target.value); saveSel(); ovDirty = true; };
+  box.querySelectorAll('[data-all]').forEach(b => b.onclick = () => {
+    SEL.clear(); if (b.dataset.all === '1') VARS.forEach(v => SEL.add(v.key));
+    box.querySelectorAll('input').forEach(i => i.checked = SEL.has(i.value)); saveSel(); ovDirty = true;
+  });
+}
+buildPicker();
+function drawOverlay() {
+  const h = HIST[VIEW];
+  const traces = VARS.filter(v => SEL.has(v.key)).map(v => {
+    const raw = h[v.key]; let lo = Infinity, hi = -Infinity;
+    for (const a of raw) if (a != null) { if (a < lo) lo = a; if (a > hi) hi = a; }
+    const span = hi - lo || 1;
+    return {x: h.t, y: raw.map(a => a == null ? null : (a - lo) / span), customdata: raw, mode: 'lines', name: v.name,
+            line: {color: v.col, width: 1.7, dash: v.dash}, hovertemplate: `%{customdata:.4g} ${v.unit}<extra>${v.name}</extra>`};
+  });
+  const L = layout('');
+  L.margin = {l: 40, r: 8, t: 8, b: 26}; L.hovermode = 'x unified';
+  L.yaxis = {...L.yaxis, range: [-0.04, 1.04], tickvals: [0, 0.5, 1], ticktext: ['min', 'mid', 'max'], fixedrange: true};
+  Plotly.react(document.getElementById('overlay'), traces, L, {displayModeBar: false, responsive: true});
+}
+new ResizeObserver(() => Plotly.Plots.resize(document.getElementById('overlay'))).observe(document.getElementById('overlay'));
+
 /* ── state, drawing ───────────────────────────────────────────────────── */
 let es = null, buf = {none: [], apc: [], ppo: []}, last = {}, N = 1, running = false;
 const fmt = v => v == null || isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US');
@@ -464,7 +532,7 @@ function draw() {
   document.getElementById('clock').textContent = `${t.toFixed(1)} h of ${(N * 0.2).toFixed(0)} h`;
   document.getElementById('prog').style.width = pc + '%'; document.getElementById('track').setAttribute('aria-valuenow', pc.toFixed(0));
 }
-function flush() { draw(); requestAnimationFrame(flush); }
+function flush(now) { draw(); if (ovDirty && now - ovLast > 400) { drawOverlay(); ovDirty = false; ovLast = now; } requestAnimationFrame(flush); }
 requestAnimationFrame(flush);
 
 function setRunning(on) {
@@ -475,7 +543,8 @@ function setRunning(on) {
 }
 function handle(list, seed) {
   for (const ev of list) {
-    if (ev.type === 'step') { buf[ev.c].push(ev); last[ev.c] = ev; N = ev.N; }
+    if (ev.type === 'step') { buf[ev.c].push(ev); last[ev.c] = ev; N = ev.N;
+      const hh = HIST[ev.c]; hh.t.push(ev.t); for (const v of VARS) hh[v.key].push(ev[v.key] ?? null); if (ev.c === VIEW) ovDirty = true; }
     else if (ev.type === 'decision') {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${ev.t.toFixed(0)}</td><td>${ev.Fs.toFixed(4)}</td><td>${ev.Fpaa.toFixed(4)}</td><td>${ev.pH_sp.toFixed(3)}</td><td>${ev.T_sp.toFixed(2)}</td>`;
@@ -499,7 +568,7 @@ document.getElementById('start').onclick = async () => {
   if (es) es.close();
   const seed = document.getElementById('seed').value, speed = document.getElementById('speed').value;
   HOURS = SEEDS[seed] ? Math.ceil(SEEDS[seed] / 10) * 10 : 320;
-  build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1;
+  build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1; HIST = newHist(); ovDirty = true;
   for (const k in PEAK) delete PEAK[k];
   for (const k in PREV_V) delete PREV_V[k];
   document.getElementById('dec').innerHTML = ''; document.getElementById('decEmpty').hidden = false;
@@ -523,13 +592,14 @@ document.querySelectorAll('#view button').forEach(b => b.onclick = () => {
   VIEW = b.dataset.c;
   document.querySelectorAll('#view button').forEach(x => x.setAttribute('aria-pressed', x === b));
   document.getElementById('gview').textContent = NAMES[VIEW];
+  document.getElementById('oview').textContent = NAMES[VIEW] + ', each line scaled to its own range so far'; ovDirty = true;
   for (const p of plots) Plotly.restyle(p.div, {'line.width': C.map(lineW)});
 });
 document.getElementById('theme').onclick = () => {
   const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   r.dataset.theme = dark ? 'light' : 'dark';
   for (const p of plots) { Plotly.restyle(p.div, {'line.color': C.map(c => css('--' + c))}); Plotly.relayout(p.div, layout(p.div.layout.title.text)); }
-  buildGauges();
+  buildGauges(); ovDirty = true;
 };
 window.addEventListener('load', () => plots.forEach(p => Plotly.Plots.resize(p.div)));
 fetch('/api/seeds').then(r => r.json()).then(list => {
