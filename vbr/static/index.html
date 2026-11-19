@@ -8,12 +8,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
-/* High-performance HMI palette: a grey plant, colour kept for the three controllers and for alarms. */
+/* High-performance HMI palette: a grey plant, colour kept for the controllers and for alarms. */
 :root {
   color-scheme: light;
   --bg: #dfe2de; --panel: #eceeea; --raise: #f6f7f4; --vessel: #f3f5f2;
   --ink: #1c2220; --muted: #59615d; --line: #b9bfba; --grid: #d3d8d3; --pipe: #6d7571; --band: #a9b0ab;
-  --none: #6f7773; --apc: #b0581e; --ppo: #11786a;
+  --none: #6f7773; --apc: #b0581e; --ppo: #11786a; --op: #6a4c93;
   --warn: #d4a900; --warn-ink: #7a6200; --danger: #c8281e;
 }
 @media (prefers-color-scheme: dark) {
@@ -21,7 +21,7 @@
     color-scheme: dark;
     --bg: #2a2f2d; --panel: #323836; --raise: #3a413e; --vessel: #3a413e;
     --ink: #e4e8e5; --muted: #a1aaa5; --line: #4a524e; --grid: #3d4441; --pipe: #8d9692; --band: #6b7470;
-    --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac;
+    --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac; --op: #b49ddb;
     --warn: #f0c93a; --warn-ink: #f0c93a; --danger: #ff5b4f;
   }
 }
@@ -29,7 +29,7 @@
   color-scheme: dark;
   --bg: #2a2f2d; --panel: #323836; --raise: #3a413e; --vessel: #3a413e;
   --ink: #e4e8e5; --muted: #a1aaa5; --line: #4a524e; --grid: #3d4441; --pipe: #8d9692; --band: #6b7470;
-  --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac;
+  --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac; --op: #b49ddb;
   --warn: #f0c93a; --warn-ink: #f0c93a; --danger: #ff5b4f;
 }
 * { box-sizing: border-box; }
@@ -60,9 +60,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 
 main { padding: 8px 20px 28px; display: grid; gap: 16px;
   grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
-  grid-template-areas: "fer yld" "fer gau" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto; }
-@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fer" "yld" "gau" "dec" "ovl" "plots"; grid-template-rows: none; } }
-.a-fer { grid-area: fer; } .a-yld { grid-area: yld; } .a-dec { grid-area: dec; } .a-ovl { grid-area: ovl; }
+  grid-template-areas: "fer yld" "fer gau" "opr opr" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto auto; }
+@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fer" "yld" "gau" "opr" "dec" "ovl" "plots"; grid-template-rows: none; } }
+.a-fer { grid-area: fer; } .a-yld { grid-area: yld; } .a-dec { grid-area: dec; } .a-ovl { grid-area: ovl; } .a-opr { grid-area: opr; }
 /* the dial panel stretches to the fermenter, so both boxes end on one line */
 .a-gau { grid-area: gau; display: flex; flex-direction: column; }
 .a-gau .gauges { flex: 1; align-content: space-evenly; }
@@ -107,7 +107,8 @@ svg.idle .drop, svg.idle .bubble { opacity: 0; }
 .ystrip dt { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .ystrip dt i { width: 14px; height: 3px; background: var(--c); display: inline-block; }
 .ystrip dd { margin: 0; font-size: 26px; font-weight: 500; line-height: 1.2; }
-.ystrip .delta dd { font-weight: 600; }
+.ystrip small { display: block; font-size: 13px; color: var(--muted); min-height: 1.3em; }
+.ystrip small.up, .ystrip small.down { font-weight: 600; }
 .up { color: var(--ppo); } .down { color: var(--apc); }
 
 /* compass dials */
@@ -152,6 +153,43 @@ svg.idle .drop, svg.idle .bubble { opacity: 0; }
 .legend { display: flex; gap: 14px; font-size: 13px; font-weight: 400; color: var(--muted); flex-wrap: wrap; }
 .legend i { display: inline-block; width: 16px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 5px; }
 
+/* operator */
+label.check { flex-direction: row; align-items: center; gap: 7px; color: var(--ink); font-size: 14px; cursor: pointer; }
+label.check input { accent-color: var(--op); margin: 0; padding: 0; }
+.controls label.check { padding-bottom: 8px; }
+.opgrid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 14px 28px; }
+@media (max-width: 760px) { .opgrid { grid-template-columns: minmax(0, 1fr); } }
+.opctls { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 22px; align-content: start; }
+.opctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
+.opctl label { color: var(--ink); font-size: 14px; }
+.opctl output { font-weight: 600; }
+.opctl output.changed { color: var(--op); }
+.opctl input { grid-column: 1 / -1; width: 100%; margin: 4px 0 0; padding: 0; border: 0; background: none; accent-color: var(--op); }
+.opside { display: grid; gap: 8px; align-content: start; }
+.opside h3 { font-size: 14px; font-weight: 600; margin: 6px 0 0; }
+.opside > button { justify-self: start; }
+.oplog { list-style: none; margin: 0; padding: 0; max-height: 170px; overflow: auto; font-size: 13.5px; }
+.oplog li { padding: 4px 0; border-bottom: 1px solid var(--grid); }
+.oplog li b { font-weight: 600; margin-right: 6px; }
+.oplog li.rejected { color: var(--muted); }
+
+/* advice that waits for approval */
+.advice { position: fixed; right: 20px; bottom: 20px; z-index: 10; width: min(420px, calc(100vw - 32px)); background: var(--panel);
+  border: 2px solid var(--danger); border-radius: 4px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .28); }
+.advice.warn { border-color: var(--warn); }
+@media (max-width: 560px) { .advice { right: 16px; bottom: 16px; } }
+.advhead { display: flex; align-items: center; gap: 9px; }
+.advhead h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.advice .lamp { background: var(--danger); border-color: var(--danger); animation: blink .8s steps(1, end) infinite; box-shadow: 0 0 10px 3px var(--danger); }
+.advice.warn .lamp { background: var(--warn); border-color: var(--warn); animation: none; box-shadow: none; }
+.advice .item { padding: 8px 0; border-bottom: 1px solid var(--grid); }
+.advice .item p { margin: 0; }
+.advice .item .chg { margin-top: 3px; font-weight: 500; }
+.advice .item .chg b { color: var(--op); font-weight: 600; }
+.advnote { font-size: 13px; color: var(--muted); margin: 8px 0 10px; }
+.advbtn { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .advice .lamp { animation: none; } }
+
 /* decision log */
 .a-dec { display: flex; flex-direction: column; }
 .log { flex: 1 1 0; min-height: 220px; overflow: auto; }
@@ -178,6 +216,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <option value="10" selected>10 h per second</option><option value="0">As fast as possible</option>
       </select>
     </label>
+    <label class="check"><input type="checkbox" id="withOp" checked>Run my own batch</label>
     <button class="primary" id="start">Start batch</button>
     <button id="pause" disabled>Pause</button>
     <button id="stop" disabled>Stop</button>
@@ -197,6 +236,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
         <button style="--c:var(--apc)" data-c="apc" aria-pressed="false">APC</button>
         <button style="--c:var(--ppo)" data-c="ppo" aria-pressed="true">PPO</button>
+        <button style="--c:var(--op)" data-c="op" aria-pressed="false">Operator</button>
       </span></h2>
       <svg id="reactor" class="idle" viewBox="0 0 380 500" aria-label="Process diagram of the fermenter under the selected controller">
         <defs>
@@ -259,16 +299,31 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
     <section class="panel a-yld">
       <h2>Net penicillin <small>kg, same batch</small></h2>
       <dl class="ystrip">
-        <div style="--c:var(--none)"><dt><i></i>No intervention</dt><dd class="num" id="y-none">–</dd></div>
-        <div style="--c:var(--apc)"><dt><i></i>APC</dt><dd class="num" id="y-apc">–</dd></div>
-        <div style="--c:var(--ppo)"><dt><i></i>PPO</dt><dd class="num" id="y-ppo">–</dd></div>
-        <div class="delta"><dt>PPO − APC</dt><dd class="num" id="y-diff">–</dd></div>
+        <div style="--c:var(--none)"><dt><i></i>No intervention</dt><dd class="num" id="y-none">–</dd><small></small></div>
+        <div style="--c:var(--apc)"><dt><i></i>APC</dt><dd class="num" id="y-apc">–</dd><small></small></div>
+        <div style="--c:var(--ppo)"><dt><i></i>PPO</dt><dd class="num" id="y-ppo">–</dd><small class="num" id="d-ppo"></small></div>
+        <div style="--c:var(--op)"><dt><i></i>Operator</dt><dd class="num" id="y-op">–</dd><small class="num" id="d-op"></small></div>
       </dl>
     </section>
     <section class="panel a-gau">
       <h2>Culture state <small id="gview">PPO</small></h2>
       <div class="gauges" id="gauges"></div>
       <p class="note">A red blinking lamp means the variable needs action. PAA is above the toxic 2,400 mg/L, sugar is accumulating, biomass or penicillin is falling from its peak (the small mark on the dial), or DO and pH are far from normal. A yellow lamp means it is approaching that range. PAA, sugar, biomass and penicillin are not measured on-line, so PPO never sees them.</p>
+    </section>
+
+    <section class="panel a-opr">
+      <h2>Your batch <small id="opState">Tick "Run my own batch" and start to run a fourth batch yourself.</small></h2>
+      <div class="opgrid">
+        <div class="opctls" id="opctls"></div>
+        <div class="opside">
+          <label class="check"><input type="checkbox" id="autopause" checked>Pause all batches while advice waits for my approval</label>
+          <button id="opReset" type="button">Back to the recipe</button>
+          <h3>Changes</h3>
+          <ol class="oplog" id="oplog"></ol>
+          <div class="empty" id="oplogEmpty">No changes yet. Your batch follows the recipe.</div>
+        </div>
+      </div>
+      <p class="note">Feeds, aeration and agitation are multipliers on the recipe, and a change applies from the next 0.2 h step. The advisor watches your batch at every step. When PAA nears the toxic level, sugar accumulates, DO falls or pH drifts, it shows what to change and waits for your approval. Falling biomass or penicillin is flagged on the dials but has no automatic advice.</p>
     </section>
 
     <section class="panel a-dec">
@@ -285,7 +340,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
 
   <div class="plots">
     <section class="panel">
-      <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span></span></h2>
+      <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span><span style="--c:var(--op)"><i></i>Operator</span></span></h2>
       <div class="pgrid" id="g-op"></div>
     </section>
     <section class="panel">
@@ -295,9 +350,16 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
   </div>
 </main>
 
+<aside class="advice" id="advice" hidden role="alertdialog" aria-labelledby="advTitle" aria-describedby="advBody">
+  <div class="advhead"><span class="lamp" aria-hidden="true"></span><h3 id="advTitle">Action needed</h3></div>
+  <div id="advBody"></div>
+  <p class="advnote" id="advNote"></p>
+  <div class="advbtn"><button class="primary" id="approve" type="button">Approve changes</button><button id="reject" type="button">Keep current settings</button></div>
+</aside>
+
 <script>
-const C = ['none', 'apc', 'ppo'];
-const NAMES = {none: 'No intervention', apc: 'APC', ppo: 'PPO'};
+const C = ['none', 'apc', 'ppo', 'op'];
+const NAMES = {none: 'No intervention', apc: 'APC', ppo: 'PPO', op: 'Operator'};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let HOURS = 320, SEEDS = {}, VIEW = 'ppo';
 
@@ -390,7 +452,7 @@ const mix = (a, b, f) => a.map((x, i) => Math.round(x + (b[i] - x) * f));
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const rgb = a => `rgb(${a.join(',')})`;
 // broth palette per controller: [early, dense]; the hue tells the method, the depth tells the biomass
-const BROTH = {none: ['#e6e1cf', '#8c7a5c'], apc: ['#f4dcb4', '#c46a1c'], ppo: ['#cfeee6', '#17806f']};
+const BROTH = {none: ['#e6e1cf', '#8c7a5c'], apc: ['#f4dcb4', '#c46a1c'], ppo: ['#cfeee6', '#17806f'], op: ['#e6def2', '#5b3f8a']};
 function brothColour(s, c) {
   let col = mix(hex(BROTH[c][0]), hex(BROTH[c][1]), Math.min(1, Math.max(0, s.X / 25)));
   col = mix(col, hex('#6b6a43'), 0.75 * Math.min(1, Math.max(0, (s.PAA - 2000) / 2500)));   // murky when PAA is toxic
@@ -511,8 +573,119 @@ function drawOverlay() {
 }
 new ResizeObserver(() => Plotly.Plots.resize(document.getElementById('overlay'))).observe(document.getElementById('overlay'));
 
+/* ── your batch ───────────────────────────────────────────────────────── */
+// k: lever name sent to /api/operate; x: multiplier on the recipe, otherwise an absolute set-point
+const OPS = [
+  {k: 'Fs', name: 'Sugar feed', min: 0, max: 2, step: 0.01, x: true}, {k: 'Fpaa', name: 'PAA feed', min: 0, max: 2, step: 0.01, x: true},
+  {k: 'Foil', name: 'Oil feed', min: 0, max: 2, step: 0.01, x: true}, {k: 'Fg', name: 'Aeration', min: 0.5, max: 1.5, step: 0.01, x: true},
+  {k: 'RPM', name: 'Agitator', min: 0.5, max: 1.5, step: 0.01, x: true},
+  {k: 'pH_sp', name: 'pH set-point', min: 6.2, max: 6.8, step: 0.01, def: 6.5},
+  {k: 'T_sp', name: 'Temperature set-point', min: 296, max: 300, step: 0.1, def: 298, unit: ' K'},
+];
+const OPDEF = Object.fromEntries(OPS.map(o => [o.k, o.x ? 1 : o.def]));
+const OPV = {...OPDEF};
+const opOf = k => OPS.find(o => o.k === k);
+const opFmt = (k, v) => { const o = opOf(k); return o.x ? '×' + v.toFixed(2) : v.toFixed(o.step < 0.1 ? 2 : 1) + (o.unit || ''); };
+const clampOp = (k, v) => { const o = opOf(k); return Math.min(o.max, Math.max(o.min, Math.round(v / o.step) * o.step)); };
+function showOp() {
+  for (const o of OPS) {
+    document.getElementById('op-' + o.k).value = OPV[o.k];
+    const out = document.getElementById('o-' + o.k);
+    out.textContent = opFmt(o.k, OPV[o.k]); out.classList.toggle('changed', Math.abs(OPV[o.k] - OPDEF[o.k]) > 1e-9);
+  }
+}
+document.getElementById('opctls').innerHTML = OPS.map(o => `<div class="opctl"><label for="op-${o.k}">${o.name}</label>` +
+  `<output id="o-${o.k}" for="op-${o.k}"></output><input type="range" id="op-${o.k}" min="${o.min}" max="${o.max}" step="${o.step}"></div>`).join('');
+showOp();
+async function sendOp() {
+  if (running && opOn) await post('/api/operate?' + new URLSearchParams(Object.entries(OPV).map(([k, v]) => [k, v.toFixed(4)])));
+}
+const nowH = () => last.op && last.op.t !== undefined ? last.op.t : 0;
+function logOp(text, cls = '') {
+  const li = document.createElement('li'); li.className = cls;
+  li.innerHTML = `<b>${nowH().toFixed(1)} h</b>${text}`;
+  document.getElementById('oplog').prepend(li); document.getElementById('oplogEmpty').hidden = true;
+}
+for (const o of OPS) {
+  const el = document.getElementById('op-' + o.k);
+  el.oninput = () => { document.getElementById('o-' + o.k).textContent = opFmt(o.k, +el.value); };
+  el.onchange = () => {
+    const old = OPV[o.k]; OPV[o.k] = clampOp(o.k, +el.value); showOp(); sendOp();
+    logOp(`You set ${o.name.toLowerCase()} ${opFmt(o.k, old)} → ${opFmt(o.k, OPV[o.k])}`);
+  };
+}
+document.getElementById('opReset').onclick = () => {
+  if (OPS.every(o => OPV[o.k] === OPDEF[o.k])) return;
+  Object.assign(OPV, OPDEF); showOp(); sendOp(); logOp('You returned every setting to the recipe');
+};
+
+/* ── advisor: watches your batch, proposes a change and waits for approval ─ */
+// level from the same limits as the dials; act gives a factor on the current multiplier, or an absolute set-point
+const RULES = [
+  {id: 'PAA', check: s => s.PAA > 2400 ? 'danger' : s.PAA > 2000 ? 'warn' : null,
+   why: (s, lv) => `PAA is ${fmt(s.PAA)} mg/L, ${lv === 'danger' ? 'above' : 'close to'} the toxic 2,400 mg/L.`,
+   act: lv => ({Fpaa: lv === 'danger' ? 0.6 : 0.8}), how: 'Cut the PAA feed'},
+  {id: 'S', check: s => s.t < 20 ? null : s.S > 10 ? 'danger' : s.S > 5 ? 'warn' : null,
+   why: s => `Sugar is accumulating at ${s.S.toFixed(1)} g/L, faster than the culture takes it up.`,
+   act: lv => ({Fs: lv === 'danger' ? 0.7 : 0.85}), how: 'Cut the sugar feed'},
+  {id: 'DO', check: s => s.DO2 < 5 ? 'danger' : s.DO2 < 8 ? 'warn' : null,
+   why: s => `Dissolved O₂ is ${s.DO2.toFixed(1)} mg/L, too low for the culture.`,
+   act: lv => ({Fg: lv === 'danger' ? 1.25 : 1.1, RPM: lv === 'danger' ? 1.15 : 1.05}), how: 'Raise aeration and agitation'},
+  {id: 'pH', check: s => { const d = Math.abs(s.pH - 6.5); return d > 0.25 ? 'danger' : d > 0.15 ? 'warn' : null; },
+   why: s => `pH is ${s.pH.toFixed(2)}, outside the normal 6.35 to 6.65.`,
+   act: () => ({pH_sp: 6.5}), abs: true, how: 'Return the pH set-point'},
+];
+const ADV = {};            // last decision per rule: {t, lv}; the same advice waits 6 h unless it turns from warning to danger
+const COOL_H = 6;
+let advT = null, pending = null;
+function advise(s) {
+  if (pending || !running || !opOn) return;
+  const items = [];
+  for (const r of RULES) {
+    const lv = r.check(s); if (!lv) continue;
+    const prev = ADV[r.id];
+    if (prev && s.t - prev.t < COOL_H && !(lv === 'danger' && prev.lv === 'warn')) continue;
+    const ch = {};
+    for (const [k, f] of Object.entries(r.act(lv))) {
+      const nv = clampOp(k, r.abs ? f : OPV[k] * f);
+      if (Math.abs(nv - OPV[k]) > 1e-9) ch[k] = [OPV[k], nv];
+    }
+    if (Object.keys(ch).length) items.push({r, lv, why: r.why(s, lv), ch});
+    else ADV[r.id] = {t: s.t, lv};        // nothing left to change within the limits; the dial still shows the alarm
+  }
+  if (!items.length) return;
+  pending = {t: s.t, items, paused: false};
+  const danger = items.some(i => i.lv === 'danger'), box = document.getElementById('advice');
+  box.className = 'advice' + (danger ? '' : ' warn');
+  document.getElementById('advTitle').textContent = `${danger ? 'Action needed' : 'Advice'} at ${s.t.toFixed(1)} h`;
+  document.getElementById('advBody').innerHTML = items.map(i => `<div class="item"><p>${i.why}</p><p class="chg">${i.r.how}. ` +
+    Object.entries(i.ch).map(([k, [a, b]]) => `${opOf(k).name} <b>${opFmt(k, a)} → ${opFmt(k, b)}</b>`).join(', ') + '</p></div>').join('');
+  const auto = document.getElementById('autopause').checked;
+  document.getElementById('advNote').textContent = auto ? 'All batches are paused until you decide.' : 'The batches keep running while you decide.';
+  box.hidden = false;
+  document.querySelector(`#view button[data-c="op"]`).click();         // show your batch on the fermenter and dials
+  if (auto && !paused) { pending.paused = true; setPaused(true); }
+  document.getElementById('approve').focus({preventScroll: true});
+}
+function closeAdvice() { pending = null; document.getElementById('advice').hidden = true; }
+async function decide(ok) {
+  if (!pending) return;
+  const p = pending; closeAdvice();
+  for (const i of p.items) {
+    ADV[i.r.id] = {t: p.t, lv: i.lv};
+    const chg = Object.entries(i.ch).map(([k, [a, b]]) => `${opOf(k).name.toLowerCase()} ${opFmt(k, a)} → ${opFmt(k, b)}`).join(', ');
+    if (ok) { for (const [k, [, b]] of Object.entries(i.ch)) OPV[k] = b; logOp(`Approved. ${chg}`); }
+    else logOp(`Rejected. ${chg}`, 'rejected');
+  }
+  if (ok) { showOp(); await sendOp(); }
+  if (p.paused && running) setPaused(false);
+}
+document.getElementById('approve').onclick = () => decide(true);
+document.getElementById('reject').onclick = () => decide(false);
+
 /* ── state, drawing ───────────────────────────────────────────────────── */
-let es = null, buf = {none: [], apc: [], ppo: []}, last = {}, N = 1, running = false;
+const emptyBuf = () => Object.fromEntries(C.map(c => [c, []]));
+let es = null, buf = emptyBuf(), last = {}, N = 1, running = false, opOn = false, paused = false;
 const fmt = v => v == null || isNaN(v) ? '–' : Math.round(v).toLocaleString('en-US');
 function draw() {
   for (const p of plots) {
@@ -522,13 +695,14 @@ function draw() {
   }
   for (const c of C) buf[c] = [];
   for (const c of C) if (last[c]) document.getElementById('y-' + c).textContent = fmt(last[c].yield);
-  if (last.apc && last.ppo) {
-    const d = last.ppo.yield - last.apc.yield, el = document.getElementById('y-diff');
-    el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)); el.className = 'num ' + (d >= 0 ? 'up' : 'down');
+  for (const c of ['ppo', 'op']) if (last.apc && last[c]) {
+    const d = last[c].yield - last.apc.yield, el = document.getElementById('d-' + c);
+    el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)) + ' vs APC'; el.className = 'num ' + (d >= 0 ? 'up' : 'down');
   }
+  if (last.op && last.op.t !== undefined && last.op.t !== advT) { advT = last.op.t; advise(last.op); }
   const s = last[VIEW];
   if (s && s.DO2 !== undefined) { updateReactor(s, VIEW); updateGauges(s, VIEW); }
-  const t = Math.min(...C.map(c => last[c] && last[c].t !== undefined ? last[c].t : 0)), pc = Math.min(100, 100 * t / (N * 0.2));
+  const act = C.filter(c => last[c] && last[c].t !== undefined), t = act.length ? Math.min(...act.map(c => last[c].t)) : 0, pc = Math.min(100, 100 * t / (N * 0.2));
   document.getElementById('clock').textContent = `${t.toFixed(1)} h of ${(N * 0.2).toFixed(0)} h`;
   document.getElementById('prog').style.width = pc + '%'; document.getElementById('track').setAttribute('aria-valuenow', pc.toFixed(0));
 }
@@ -540,6 +714,7 @@ function setRunning(on) {
   document.getElementById('pause').disabled = !on; document.getElementById('stop').disabled = !on;
   document.getElementById('pause').textContent = 'Pause';
   document.getElementById('reactor').classList.toggle('idle', !on);
+  if (!on) closeAdvice();
 }
 function handle(list, seed) {
   for (const ev of list) {
@@ -568,24 +743,31 @@ document.getElementById('start').onclick = async () => {
   if (es) es.close();
   const seed = document.getElementById('seed').value, speed = document.getElementById('speed').value;
   HOURS = SEEDS[seed] ? Math.ceil(SEEDS[seed] / 10) * 10 : 320;
-  build(); buf = {none: [], apc: [], ppo: []}; last = {}; N = 1; HIST = newHist(); ovDirty = true;
+  build(); buf = emptyBuf(); last = {}; N = 1; HIST = newHist(); ovDirty = true; advT = null; closeAdvice();
+  for (const k in ADV) delete ADV[k];
+  document.getElementById('oplog').innerHTML = ''; document.getElementById('oplogEmpty').hidden = false;
   for (const k in PEAK) delete PEAK[k];
   for (const k in PREV_V) delete PREV_V[k];
   document.getElementById('dec').innerHTML = ''; document.getElementById('decEmpty').hidden = false;
   for (const c of C) document.getElementById('y-' + c).textContent = '–';
-  document.getElementById('y-diff').textContent = '–';
-  const r = await post(`/api/start?seed=${seed}&speed=${speed}`);
+  for (const c of ['ppo', 'op']) document.getElementById('d-' + c).textContent = '';
+  opOn = document.getElementById('withOp').checked;
+  const r = await post(`/api/start?seed=${seed}&speed=${speed}&op=${opOn ? 1 : 0}`);
   if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started. Check the seed and try again.'; return; }
   document.getElementById('state').textContent = `Running batch ${seed}`;
-  setRunning(true);
+  setRunning(true); paused = false;
+  if (opOn) await sendOp();                        // settings chosen before the start apply from the first step
+  document.getElementById('opState').textContent = opOn ? `You run a fourth batch of seed ${seed}.` : 'Only the three controllers run this time.';
   es = new EventSource('/api/stream?sid=' + SID);
   es.onmessage = e => handle(JSON.parse(e.data), seed);
 };
-document.getElementById('pause').onclick = async () => {
-  const r = await post('/api/pause');
-  document.getElementById('pause').textContent = r.paused ? 'Resume' : 'Pause';
-  document.getElementById('reactor').classList.toggle('idle', r.paused);
-};
+async function setPaused(on) {
+  const r = await post('/api/pause' + (on === undefined ? '' : `?on=${on ? 1 : 0}`));
+  paused = !!r.paused;
+  document.getElementById('pause').textContent = paused ? 'Resume' : 'Pause';
+  document.getElementById('reactor').classList.toggle('idle', paused);
+}
+document.getElementById('pause').onclick = () => setPaused();
 document.getElementById('stop').onclick = () => post('/api/stop');
 document.getElementById('speed').onchange = e => post('/api/speed?speed=' + e.target.value);
 document.querySelectorAll('#view button').forEach(b => b.onclick = () => {

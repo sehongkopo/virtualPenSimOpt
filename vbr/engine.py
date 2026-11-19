@@ -5,6 +5,8 @@ Controllers
   apc   PI control of PAA at 1,200 mg/L from 10 h (Goldrick et al., 2019), acting on the true PAA
   ppo   the reinforcement-learning policy, which reads only the sixteen on-line channels and
         sets ten operating variables every 6 h from 12 h
+  op    a person at the dashboard: the recipe of 'none', with multipliers on the feeds, aeration
+        and agitation and the pH and temperature set-points read from `levers` at every step
 
 The batch is integrated by pyIndPenSim with the BDF solver at the tolerances of the study.
 A callback receives every 0.2 h step, so a dashboard can follow the batch while it runs.
@@ -17,7 +19,9 @@ from pyindpensim.indpensim import indpensim
 from pyindpensim.fctrl_indpensim import fctrl_indpensim
 from .policy import Policy, ObsBuilder, LEVERS, DW, AK
 
-CONTROLLERS = ('none', 'apc', 'ppo')
+CONTROLLERS = ('none', 'apc', 'ppo', 'op')
+OP_LEVERS = ('Fs', 'Fpaa', 'Foil', 'Fg', 'RPM')          # what the operator can change, as multipliers on the recipe
+OP_DEFAULT = (1.0, 1.0, 1.0, 1.0, 1.0, 6.5, 298.0)       # ... followed by the pH and temperature set-points
 
 
 class Stop(Exception):
@@ -53,8 +57,11 @@ def snapshot(X, k, h):
     }
 
 
-def run_batch(seed, controller='ppo', policy_seed=0, on_step=None, on_decision=None):
-    """Simulate one batch. Returns the net penicillin yield (kg) and the batch structure."""
+def run_batch(seed, controller='ppo', policy_seed=0, on_step=None, on_decision=None, levers=None):
+    """Simulate one batch. Returns the net penicillin yield (kg) and the batch structure.
+
+    For controller 'op', `levers` is a sequence laid out as OP_LEVERS + (pH_sp, T_sp) that another
+    process may change while the batch runs (a multiprocessing Array, for example)."""
     if controller not in CONTROLLERS:
         raise ValueError(f'controller must be one of {CONTROLLERS}')
     rng = np.random.default_rng(seed)
@@ -66,8 +73,14 @@ def run_batch(seed, controller='ppo', policy_seed=0, on_step=None, on_decision=N
         CF.lever, CF.pH_sp, CF.T_sp = lever, ph_sp, t_sp
     state = {}
 
+    if controller == 'op' and levers is None:
+        levers = list(OP_DEFAULT)
+
     def ctrl(X, Xd, k, h_, T_, CF_):
         i = k - 1
+        if controller == 'op':                                    # read the operator's settings for this step
+            v = list(levers)
+            CF_.lever = dict(zip(OP_LEVERS, v[:5])); CF_.pH_sp = v[5]; CF_.T_sp = v[6]
         if controller == 'ppo' and i % DW == 0:
             if 'obs' not in state:
                 state['obs'] = ObsBuilder(X)

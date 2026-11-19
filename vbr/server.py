@@ -3,7 +3,8 @@
     python -m vbr [--port 8050] [--host 127.0.0.1]
 
 The same batch is run under no intervention, APC and PPO in three processes, and every 0.2 h step
-is streamed to the browser by server-sent events.
+is streamed to the browser by server-sent events. With op=1 a fourth batch is run by the person at the
+dashboard, who changes its operating variables through /api/operate while it runs.
 """
 import argparse, io, json, contextlib, threading, time, webbrowser
 import multiprocessing as mp
@@ -11,13 +12,13 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 import numpy as np
-from .engine import run_batch, CONTROLLERS, Stop
+from .engine import run_batch, CONTROLLERS, OP_LEVERS, OP_DEFAULT, Stop
 
 STATIC = Path(__file__).parent / 'static'
 REF = Path(__file__).resolve().parent.parent / 'reference' / 'evaluation_batches.npz'
 
 
-def _worker(seed, controller, q, speed, paused, stop):
+def _worker(seed, controller, q, speed, paused, stop, levers=None):
     """Runs one batch and puts every step on the queue. speed = simulated hours per second (0 = as fast as possible)."""
     t0 = [time.time(), 0.0, speed.value]                          # anchor time, last batch time, speed in use
 
@@ -39,7 +40,7 @@ def _worker(seed, controller, q, speed, paused, stop):
 
     try:
         with contextlib.redirect_stdout(io.StringIO()):
-            y, _ = run_batch(seed, controller, on_step=on_step, on_decision=on_decision)
+            y, _ = run_batch(seed, controller, on_step=on_step, on_decision=on_decision, levers=levers)
         q.put(('done', controller, {'yield': y}, 0, 0))
     except Stop:
         q.put(('stopped', controller, {}, 0, 0))
@@ -49,23 +50,26 @@ def _worker(seed, controller, q, speed, paused, stop):
 
 class Run:
     """One live comparison of the three controllers on one seed."""
-    def __init__(self, seed, speed):
+    def __init__(self, seed, speed, operator=False):
         ctx = mp.get_context('spawn')
         self.seed = seed; self.events = []; self.lock = threading.Lock()
         self.q = ctx.Queue(); self.speed = ctx.Value('d', speed)
         self.paused = ctx.Event(); self.stop = ctx.Event()
-        self.procs = [ctx.Process(target=_worker, args=(seed, c, self.q, self.speed, self.paused, self.stop), daemon=True)
-                      for c in CONTROLLERS]
+        self.ctrls = CONTROLLERS if operator else tuple(c for c in CONTROLLERS if c != 'op')
+        self.levers = ctx.Array('d', OP_DEFAULT)                  # shared with the operator's batch
+        self.procs = [ctx.Process(target=_worker, daemon=True,
+                                  args=(seed, c, self.q, self.speed, self.paused, self.stop, self.levers if c == 'op' else None))
+                      for c in self.ctrls]
         for p in self.procs: p.start()
         threading.Thread(target=self._drain, daemon=True).start()
         self.seen = time.time()
-        self._add({'type': 'start', 'seed': seed})
+        self._add({'type': 'start', 'seed': seed, 'controllers': list(self.ctrls)})
 
     def _add(self, ev):
         with self.lock: self.events.append(ev)
 
     def _drain(self):
-        live = set(CONTROLLERS)
+        live = set(self.ctrls)
         while live:
             try:
                 kind, c, payload, k, N = self.q.get(timeout=0.5)
@@ -90,6 +94,9 @@ class Run:
 # One run per browser session, keyed by a random id that the page keeps in sessionStorage.
 RUNS, RUNS_LOCK = {}, threading.Lock()
 MAX_RUNS = 4          # concurrent comparisons (three processes each); set with --max-runs
+# what the operator may set: multipliers on the recipe, then set-points (pH, K)
+LIMITS = {'Fs': (0.0, 2.0), 'Fpaa': (0.0, 2.0), 'Foil': (0.0, 2.0), 'Fg': (0.5, 1.5), 'RPM': (0.5, 1.5),
+          'pH_sp': (6.2, 6.8), 'T_sp': (296.0, 300.0)}
 IDLE_S = 300          # a run nobody has watched for this long is stopped and removed
 
 
@@ -166,10 +173,21 @@ class Handler(BaseHTTPRequestHandler):
                     seed = int(q.get('seed', 847)); speed = min(max(float(q.get('speed', 10)), 0.0), 1000.0)
                 except ValueError:
                     return self._json({'ok': False, 'message': 'seed must be an integer'}, 400)
-                RUNS[sid] = Run(seed, speed)
+                RUNS[sid] = Run(seed, speed, operator=q.get('op') == '1')
             self._json({'ok': True})
         elif u.path == '/api/pause' and run:
-            (run.paused.clear if run.paused.is_set() else run.paused.set)(); self._json({'paused': run.paused.is_set()})
+            on = q.get('on')                                      # on=1 or on=0 sets the state, no value toggles it
+            want = (not run.paused.is_set()) if on is None else on == '1'
+            (run.paused.set if want else run.paused.clear)(); self._json({'paused': run.paused.is_set()})
+        elif u.path == '/api/operate' and run:
+            for i, name in enumerate(OP_LEVERS + ('pH_sp', 'T_sp')):
+                if name in q:
+                    try:
+                        v = float(q[name])
+                    except ValueError:
+                        return self._json({'ok': False, 'message': f'{name} must be a number'}, 400)
+                    run.levers[i] = min(max(v, LIMITS[name][0]), LIMITS[name][1])
+            self._json({'ok': True, 'levers': dict(zip(OP_LEVERS + ('pH_sp', 'T_sp'), run.levers[:]))})
         elif u.path == '/api/speed' and run:
             run.speed.value = float(q.get('speed', 10)); self._json({'ok': True})
         elif u.path == '/api/stop' and run:
