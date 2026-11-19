@@ -221,7 +221,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <option value="10" selected>10 h per second</option><option value="0">As fast as possible</option>
       </select>
     </label>
-    <label class="check"><input type="checkbox" id="withOp" checked>Run a manual batch</label>
+    <label class="check"><input type="checkbox" id="withOp" autocomplete="off">Run a manual batch</label>
     <button class="primary" id="start">Start batch</button>
     <button id="pause" disabled>Pause</button>
     <button id="stop" disabled>Stop</button>
@@ -235,7 +235,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
   <span class="num" id="clock">0.0 h</span>
 </div>
 
-<main class="noopr">
+<main class="auto noopr">
     <section class="panel a-fer">
       <h2>Fermenter <span class="seg" id="view">
         <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
