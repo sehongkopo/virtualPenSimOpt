@@ -3,7 +3,7 @@
     python -m vbr [--port 8050] [--host 127.0.0.1]
 
 The same batch is run under no intervention, APC and PPO in three processes, and every 0.2 h step
-is streamed to the browser by server-sent events. With op=1 a fourth batch is run by the person at the
+is streamed to the browser by server-sent events. With manual=1 a fourth, manual batch is run by the person at the
 dashboard, who changes its operating variables through /api/operate while it runs.
 """
 import argparse, io, json, contextlib, threading, time, webbrowser
@@ -50,15 +50,15 @@ def _worker(seed, controller, q, speed, paused, stop, levers=None):
 
 class Run:
     """One live comparison of the three controllers on one seed."""
-    def __init__(self, seed, speed, operator=False):
+    def __init__(self, seed, speed, manual=False):
         ctx = mp.get_context('spawn')
         self.seed = seed; self.events = []; self.lock = threading.Lock()
         self.q = ctx.Queue(); self.speed = ctx.Value('d', speed)
         self.paused = ctx.Event(); self.stop = ctx.Event()
-        self.ctrls = CONTROLLERS if operator else tuple(c for c in CONTROLLERS if c != 'op')
-        self.levers = ctx.Array('d', OP_DEFAULT)                  # shared with the operator's batch
+        self.ctrls = CONTROLLERS if manual else tuple(c for c in CONTROLLERS if c != 'manual')
+        self.levers = ctx.Array('d', OP_DEFAULT)                  # shared with the manual batch
         self.procs = [ctx.Process(target=_worker, daemon=True,
-                                  args=(seed, c, self.q, self.speed, self.paused, self.stop, self.levers if c == 'op' else None))
+                                  args=(seed, c, self.q, self.speed, self.paused, self.stop, self.levers if c == 'manual' else None))
                       for c in self.ctrls]
         for p in self.procs: p.start()
         threading.Thread(target=self._drain, daemon=True).start()
@@ -94,7 +94,7 @@ class Run:
 # One run per browser session, keyed by a random id that the page keeps in sessionStorage.
 RUNS, RUNS_LOCK = {}, threading.Lock()
 MAX_RUNS = 4          # concurrent comparisons (three processes each); set with --max-runs
-# what the operator may set: multipliers on the recipe, then set-points (pH, K)
+# what the person may set in the manual batch: multipliers on the recipe, then set-points (pH, K)
 LIMITS = {'Fs': (0.0, 2.0), 'Fpaa': (0.0, 2.0), 'Foil': (0.0, 2.0), 'Fg': (0.5, 1.5), 'RPM': (0.5, 1.5),
           'pH_sp': (6.2, 6.8), 'T_sp': (296.0, 300.0)}
 IDLE_S = 300          # a run nobody has watched for this long is stopped and removed
@@ -173,7 +173,7 @@ class Handler(BaseHTTPRequestHandler):
                     seed = int(q.get('seed', 847)); speed = min(max(float(q.get('speed', 10)), 0.0), 1000.0)
                 except ValueError:
                     return self._json({'ok': False, 'message': 'seed must be an integer'}, 400)
-                RUNS[sid] = Run(seed, speed, operator=q.get('op') == '1')
+                RUNS[sid] = Run(seed, speed, manual=q.get('manual') == '1')
             self._json({'ok': True})
         elif u.path == '/api/pause' and run:
             on = q.get('on')                                      # on=1 or on=0 sets the state, no value toggles it

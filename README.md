@@ -9,7 +9,7 @@ measurements alone* (Hong, submitted; preprint https://doi.org/10.26434/chemrxiv
 | No intervention | – | the recipe of the released code, with its PRBS perturbations of the feeds |
 | APC | the true PAA concentration (as in the released code) | the PAA feed, by PI control at 1,200 mg/L from 10 h (Goldrick et al., 2019) |
 | PPO | the sixteen on-line channels only | ten operating variables every 6 h from 12 h |
-| Operator (optional) | the person at the dashboard | feeds, aeration and agitation as multipliers on the recipe, and the pH and temperature set-points, at any time |
+| Manual (optional) | the person at the dashboard | feeds, aeration and agitation as multipliers on the recipe, and the pH and temperature set-points, at any time |
 
 Every batch is integrated by [pyIndPenSim](https://github.com/sehongkopo/pyIndPenSim) with the BDF solver at the
 tolerances of the study (relative 10⁻⁶, absolute 10⁻⁸). A batch is fixed by its seed, so the three controllers
@@ -38,7 +38,7 @@ python -m vbr --host 0.0.0.0 --port 8060 --no-browser --max-runs 4
 ```
 
 Each browser tab runs its own comparison. `--max-runs` caps how many run at once (each uses three processes, four
-with your own batch), and a
+with a manual batch), and a
 comparison that no browser has watched for five minutes is stopped.
 
 The dashboard shows
@@ -51,15 +51,15 @@ The dashboard shows
   observed variables (dissolved O₂, pH, temperature, off-gas CO₂, OUR, CER) for all three controllers,
 - the net yield of each controller and every decision of the PPO policy, with a progress bar for the batch,
 - an overlay of every variable of the selected controller, each scaled to its own range, with a box to pick them,
-- with "Run my own batch" ticked, a fourth batch of the same seed that you operate yourself.
+- with "Run a manual batch" ticked, a fourth batch of the same seed that you run by hand.
 
-### Operating your own batch
+### Running a manual batch
 
-Your batch starts from the recipe of no intervention, so with no changes it repeats that batch exactly. Sliders set
+The manual batch starts from the recipe of no intervention, so with no changes it repeats that batch exactly. Sliders set
 the sugar, PAA and oil feeds (×0 to ×2 of the recipe), aeration and agitation (×0.5 to ×1.5) and the pH (6.2 to 6.8)
 and temperature (296 to 300 K) set-points, and a change applies from the next 0.2 h step.
 
-An advisor watches your batch at every step. When PAA rises above 2,000 mg/L, sugar above 5 g/L after 20 h, DO falls
+An advisor watches the manual batch at every step. When PAA rises above 2,000 mg/L, sugar above 5 g/L after 20 h, DO falls
 below 8 mg/L or pH moves more than 0.15 from 6.5, it raises a signal, proposes a change and waits for your approval.
 
 | Signal | Proposed change (warning, danger) |
@@ -86,7 +86,7 @@ y_apc, _ = run_batch(847, 'apc')
 ```
 
 `run_batch(seed, controller, policy_seed=0, on_step=None, on_decision=None, levers=None)` accepts callbacks that
-receive every step and every decision of the policy. For the controller `'op'`, `levers` holds the multipliers on
+receive every step and every decision of the policy. For the controller `'manual'`, `levers` holds the multipliers on
 Fs, Fpaa, Foil, Fg and RPM followed by the pH and temperature set-points, and is read at every step.
 
 ## Agreement with the study

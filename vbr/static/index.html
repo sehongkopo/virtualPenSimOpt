@@ -13,7 +13,7 @@
   color-scheme: light;
   --bg: #dfe2de; --panel: #eceeea; --raise: #f6f7f4; --vessel: #f3f5f2;
   --ink: #1c2220; --muted: #59615d; --line: #b9bfba; --grid: #d3d8d3; --pipe: #6d7571; --band: #a9b0ab;
-  --none: #6f7773; --apc: #b0581e; --ppo: #11786a; --op: #6a4c93;
+  --none: #6f7773; --apc: #b0581e; --ppo: #11786a; --manual: #6a4c93;
   --warn: #d4a900; --warn-ink: #7a6200; --danger: #c8281e;
 }
 @media (prefers-color-scheme: dark) {
@@ -21,7 +21,7 @@
     color-scheme: dark;
     --bg: #2a2f2d; --panel: #323836; --raise: #3a413e; --vessel: #3a413e;
     --ink: #e4e8e5; --muted: #a1aaa5; --line: #4a524e; --grid: #3d4441; --pipe: #8d9692; --band: #6b7470;
-    --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac; --op: #b49ddb;
+    --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac; --manual: #b49ddb;
     --warn: #f0c93a; --warn-ink: #f0c93a; --danger: #ff5b4f;
   }
 }
@@ -29,7 +29,7 @@
   color-scheme: dark;
   --bg: #2a2f2d; --panel: #323836; --raise: #3a413e; --vessel: #3a413e;
   --ink: #e4e8e5; --muted: #a1aaa5; --line: #4a524e; --grid: #3d4441; --pipe: #8d9692; --band: #6b7470;
-  --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac; --op: #b49ddb;
+  --none: #a4aca8; --apc: #e58a4a; --ppo: #4cc2ac; --manual: #b49ddb;
   --warn: #f0c93a; --warn-ink: #f0c93a; --danger: #ff5b4f;
 }
 * { box-sizing: border-box; }
@@ -62,6 +62,10 @@ main { padding: 8px 20px 28px; display: grid; gap: 16px;
   grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
   grid-template-areas: "fer yld" "fer gau" "opr opr" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto auto; }
 @media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fer" "yld" "gau" "opr" "dec" "ovl" "plots"; grid-template-rows: none; } }
+/* automatic controllers only: no manual panel, button, yield or legend entry */
+main.auto { grid-template-areas: "fer yld" "fer gau" "dec ovl" "plots plots"; grid-template-rows: auto 1fr auto auto; }
+@media (max-width: 980px) { main.auto { grid-template-areas: "fer" "yld" "gau" "dec" "ovl" "plots"; } }
+main.auto .a-opr, main.auto .m-only { display: none; }
 .a-fer { grid-area: fer; } .a-yld { grid-area: yld; } .a-dec { grid-area: dec; } .a-ovl { grid-area: ovl; } .a-opr { grid-area: opr; }
 /* the dial panel stretches to the fermenter, so both boxes end on one line */
 .a-gau { grid-area: gau; display: flex; flex-direction: column; }
@@ -153,9 +157,9 @@ svg.idle .drop, svg.idle .bubble { opacity: 0; }
 .legend { display: flex; gap: 14px; font-size: 13px; font-weight: 400; color: var(--muted); flex-wrap: wrap; }
 .legend i { display: inline-block; width: 16px; height: 3px; background: var(--c); vertical-align: middle; margin-right: 5px; }
 
-/* operator */
+/* manual batch */
 label.check { flex-direction: row; align-items: center; gap: 7px; color: var(--ink); font-size: 14px; cursor: pointer; }
-label.check input { accent-color: var(--op); margin: 0; padding: 0; }
+label.check input { accent-color: var(--manual); margin: 0; padding: 0; }
 .controls label.check { padding-bottom: 8px; }
 .opgrid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 14px 28px; }
 @media (max-width: 760px) { .opgrid { grid-template-columns: minmax(0, 1fr); } }
@@ -163,8 +167,8 @@ label.check input { accent-color: var(--op); margin: 0; padding: 0; }
 .opctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
 .opctl label { color: var(--ink); font-size: 14px; }
 .opctl output { font-weight: 600; }
-.opctl output.changed { color: var(--op); }
-.opctl input { grid-column: 1 / -1; width: 100%; margin: 4px 0 0; padding: 0; border: 0; background: none; accent-color: var(--op); }
+.opctl output.changed { color: var(--manual); }
+.opctl input { grid-column: 1 / -1; width: 100%; margin: 4px 0 0; padding: 0; border: 0; background: none; accent-color: var(--manual); }
 .opside { display: grid; gap: 8px; align-content: start; }
 .opside h3 { font-size: 14px; font-weight: 600; margin: 6px 0 0; }
 .opside > button { justify-self: start; }
@@ -185,7 +189,7 @@ label.check input { accent-color: var(--op); margin: 0; padding: 0; }
 .advice .item { padding: 8px 0; border-bottom: 1px solid var(--grid); }
 .advice .item p { margin: 0; }
 .advice .item .chg { margin-top: 3px; font-weight: 500; }
-.advice .item .chg b { color: var(--op); font-weight: 600; }
+.advice .item .chg b { color: var(--manual); font-weight: 600; }
 .advnote { font-size: 13px; color: var(--muted); margin: 8px 0 10px; }
 .advbtn { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (prefers-reduced-motion: reduce) { .advice .lamp { animation: none; } }
@@ -216,7 +220,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <option value="10" selected>10 h per second</option><option value="0">As fast as possible</option>
       </select>
     </label>
-    <label class="check"><input type="checkbox" id="withOp" checked>Run my own batch</label>
+    <label class="check"><input type="checkbox" id="withOp" checked>Run a manual batch</label>
     <button class="primary" id="start">Start batch</button>
     <button id="pause" disabled>Pause</button>
     <button id="stop" disabled>Stop</button>
@@ -236,7 +240,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <button style="--c:var(--none)" data-c="none" aria-pressed="false">No intervention</button>
         <button style="--c:var(--apc)" data-c="apc" aria-pressed="false">APC</button>
         <button style="--c:var(--ppo)" data-c="ppo" aria-pressed="true">PPO</button>
-        <button style="--c:var(--op)" data-c="op" aria-pressed="false">Operator</button>
+        <button class="m-only" style="--c:var(--manual)" data-c="manual" aria-pressed="false">Manual</button>
       </span></h2>
       <svg id="reactor" class="idle" viewBox="0 0 380 500" aria-label="Process diagram of the fermenter under the selected controller">
         <defs>
@@ -302,7 +306,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
         <div style="--c:var(--none)"><dt><i></i>No intervention</dt><dd class="num" id="y-none">–</dd><small></small></div>
         <div style="--c:var(--apc)"><dt><i></i>APC</dt><dd class="num" id="y-apc">–</dd><small></small></div>
         <div style="--c:var(--ppo)"><dt><i></i>PPO</dt><dd class="num" id="y-ppo">–</dd><small class="num" id="d-ppo"></small></div>
-        <div style="--c:var(--op)"><dt><i></i>Operator</dt><dd class="num" id="y-op">–</dd><small class="num" id="d-op"></small></div>
+        <div class="m-only" style="--c:var(--manual)"><dt><i></i>Manual</dt><dd class="num" id="y-manual">–</dd><small class="num" id="d-manual"></small></div>
       </dl>
     </section>
     <section class="panel a-gau">
@@ -312,7 +316,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
     </section>
 
     <section class="panel a-opr">
-      <h2>Your batch <small id="opState">Tick "Run my own batch" and start to run a fourth batch yourself.</small></h2>
+      <h2>Manual batch <small id="opState">Tick "Run a manual batch" and start to run a fourth batch yourself.</small></h2>
       <div class="opgrid">
         <div class="opctls" id="opctls"></div>
         <div class="opside">
@@ -320,10 +324,10 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
           <button id="opReset" type="button">Back to the recipe</button>
           <h3>Changes</h3>
           <ol class="oplog" id="oplog"></ol>
-          <div class="empty" id="oplogEmpty">No changes yet. Your batch follows the recipe.</div>
+          <div class="empty" id="oplogEmpty">No changes yet. The manual batch follows the recipe.</div>
         </div>
       </div>
-      <p class="note">Feeds, aeration and agitation are multipliers on the recipe, and a change applies from the next 0.2 h step. The advisor watches your batch at every step. When PAA nears the toxic level, sugar accumulates, DO falls or pH drifts, it shows what to change and waits for your approval. Falling biomass or penicillin is flagged on the dials but has no automatic advice.</p>
+      <p class="note">Feeds, aeration and agitation are multipliers on the recipe, and a change applies from the next 0.2 h step. The advisor watches the manual batch at every step. When PAA nears the toxic level, sugar accumulates, DO falls or pH drifts, it shows what to change and waits for your approval. Falling biomass or penicillin is flagged on the dials but has no automatic advice.</p>
     </section>
 
     <section class="panel a-dec">
@@ -340,7 +344,7 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
 
   <div class="plots">
     <section class="panel">
-      <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span><span style="--c:var(--op)"><i></i>Operator</span></span></h2>
+      <h2>Operating variables <span class="legend"><span style="--c:var(--none)"><i></i>No intervention</span><span style="--c:var(--apc)"><i></i>APC</span><span style="--c:var(--ppo)"><i></i>PPO</span><span class="m-only" style="--c:var(--manual)"><i></i>Manual</span></span></h2>
       <div class="pgrid" id="g-op"></div>
     </section>
     <section class="panel">
@@ -358,8 +362,8 @@ tbody tr:first-child td { color: var(--ppo); font-weight: 500; }
 </aside>
 
 <script>
-const C = ['none', 'apc', 'ppo', 'op'];
-const NAMES = {none: 'No intervention', apc: 'APC', ppo: 'PPO', op: 'Operator'};
+const C = ['none', 'apc', 'ppo', 'manual'];
+const NAMES = {none: 'No intervention', apc: 'APC', ppo: 'PPO', manual: 'Manual'};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let HOURS = 320, SEEDS = {}, VIEW = 'ppo';
 
@@ -452,7 +456,7 @@ const mix = (a, b, f) => a.map((x, i) => Math.round(x + (b[i] - x) * f));
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const rgb = a => `rgb(${a.join(',')})`;
 // broth palette per controller: [early, dense]; the hue tells the method, the depth tells the biomass
-const BROTH = {none: ['#e6e1cf', '#8c7a5c'], apc: ['#f4dcb4', '#c46a1c'], ppo: ['#cfeee6', '#17806f'], op: ['#e6def2', '#5b3f8a']};
+const BROTH = {none: ['#e6e1cf', '#8c7a5c'], apc: ['#f4dcb4', '#c46a1c'], ppo: ['#cfeee6', '#17806f'], manual: ['#e6def2', '#5b3f8a']};
 function brothColour(s, c) {
   let col = mix(hex(BROTH[c][0]), hex(BROTH[c][1]), Math.min(1, Math.max(0, s.X / 25)));
   col = mix(col, hex('#6b6a43'), 0.75 * Math.min(1, Math.max(0, (s.PAA - 2000) / 2500)));   // murky when PAA is toxic
@@ -600,7 +604,7 @@ showOp();
 async function sendOp() {
   if (running && opOn) await post('/api/operate?' + new URLSearchParams(Object.entries(OPV).map(([k, v]) => [k, v.toFixed(4)])));
 }
-const nowH = () => last.op && last.op.t !== undefined ? last.op.t : 0;
+const nowH = () => last.manual && last.manual.t !== undefined ? last.manual.t : 0;
 function logOp(text, cls = '') {
   const li = document.createElement('li'); li.className = cls;
   li.innerHTML = `<b>${nowH().toFixed(1)} h</b>${text}`;
@@ -663,7 +667,7 @@ function advise(s) {
   const auto = document.getElementById('autopause').checked;
   document.getElementById('advNote').textContent = auto ? 'All batches are paused until you decide.' : 'The batches keep running while you decide.';
   box.hidden = false;
-  document.querySelector(`#view button[data-c="op"]`).click();         // show your batch on the fermenter and dials
+  document.querySelector(`#view button[data-c="manual"]`).click();         // show your batch on the fermenter and dials
   if (auto && !paused) { pending.paused = true; setPaused(true); }
   document.getElementById('approve').focus({preventScroll: true});
 }
@@ -695,11 +699,11 @@ function draw() {
   }
   for (const c of C) buf[c] = [];
   for (const c of C) if (last[c]) document.getElementById('y-' + c).textContent = fmt(last[c].yield);
-  for (const c of ['ppo', 'op']) if (last.apc && last[c]) {
+  for (const c of ['ppo', 'manual']) if (last.apc && last[c]) {
     const d = last[c].yield - last.apc.yield, el = document.getElementById('d-' + c);
     el.textContent = (d >= 0 ? '+' : '−') + fmt(Math.abs(d)) + ' vs APC'; el.className = 'num ' + (d >= 0 ? 'up' : 'down');
   }
-  if (last.op && last.op.t !== undefined && last.op.t !== advT) { advT = last.op.t; advise(last.op); }
+  if (last.manual && last.manual.t !== undefined && last.manual.t !== advT) { advT = last.manual.t; advise(last.manual); }
   const s = last[VIEW];
   if (s && s.DO2 !== undefined) { updateReactor(s, VIEW); updateGauges(s, VIEW); }
   const act = C.filter(c => last[c] && last[c].t !== undefined), t = act.length ? Math.min(...act.map(c => last[c].t)) : 0, pc = Math.min(100, 100 * t / (N * 0.2));
@@ -739,6 +743,13 @@ const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 
 const SID = (() => { try { let v = sessionStorage.getItem('vbr-sid'); if (!v) { v = newId(); sessionStorage.setItem('vbr-sid', v); } return v; } catch (e) { return newId(); } })();
 async function post(path) { return fetch(path + (path.includes('?') ? '&' : '?') + 'sid=' + SID, {method: 'POST'}).then(r => r.json()); }
 
+// the manual panel shows only when a manual batch is chosen; a running batch keeps its layout
+function showManual(on) {
+  document.querySelector('main').classList.toggle('auto', !on);
+  if (!on && VIEW === 'manual') document.querySelector('#view button[data-c="ppo"]').click();
+}
+document.getElementById('withOp').onchange = e => { if (!running) showManual(e.target.checked); };
+
 document.getElementById('start').onclick = async () => {
   if (es) es.close();
   const seed = document.getElementById('seed').value, speed = document.getElementById('speed').value;
@@ -750,14 +761,14 @@ document.getElementById('start').onclick = async () => {
   for (const k in PREV_V) delete PREV_V[k];
   document.getElementById('dec').innerHTML = ''; document.getElementById('decEmpty').hidden = false;
   for (const c of C) document.getElementById('y-' + c).textContent = '–';
-  for (const c of ['ppo', 'op']) document.getElementById('d-' + c).textContent = '';
-  opOn = document.getElementById('withOp').checked;
-  const r = await post(`/api/start?seed=${seed}&speed=${speed}&op=${opOn ? 1 : 0}`);
+  for (const c of ['ppo', 'manual']) document.getElementById('d-' + c).textContent = '';
+  opOn = document.getElementById('withOp').checked; showManual(opOn);
+  const r = await post(`/api/start?seed=${seed}&speed=${speed}&manual=${opOn ? 1 : 0}`);
   if (!r.ok) { document.getElementById('state').textContent = r.message || 'The batch could not be started. Check the seed and try again.'; return; }
   document.getElementById('state').textContent = `Running batch ${seed}`;
   setRunning(true); paused = false;
   if (opOn) await sendOp();                        // settings chosen before the start apply from the first step
-  document.getElementById('opState').textContent = opOn ? `You run a fourth batch of seed ${seed}.` : 'Only the three controllers run this time.';
+  document.getElementById('opState').textContent = opOn ? `You run a fourth, manual batch of seed ${seed}.` : 'Only the three controllers run this time.';
   es = new EventSource('/api/stream?sid=' + SID);
   es.onmessage = e => handle(JSON.parse(e.data), seed);
 };
